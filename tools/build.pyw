@@ -19,13 +19,14 @@ class CMakeBuildThread(QThread):
     output_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
 
-    def __init__(self, source_dir, build_dir, build_type, architecture, clean_build):
+    def __init__(self, source_dir, build_dir, build_type, architecture, clean_build, enable_imgui):
         super().__init__()
         self.source_dir = source_dir
         self.build_dir = build_dir
         self.build_type = build_type
         self.architecture = architecture
         self.clean_build = clean_build
+        self.enable_imgui = enable_imgui
 
     def run(self):
         try:
@@ -58,6 +59,12 @@ class CMakeBuildThread(QThread):
                 "-DINSTALL_WOLFADMIN=OFF", 
                 "-DINSTALL_EXTRA=OFF"
             ])
+
+            # Optional features
+            if self.enable_imgui:
+                cmake_cmd.append("-DFEATURE_IMGUI=ON")
+                # Prefer bundled libs for simplicity
+                cmake_cmd.append("-DBUNDLED_LIBS=ON")
             
             self.output_signal.emit(f"Running: {' '.join(cmake_cmd)}\n")
             encoding = get_preferred_encoding()
@@ -188,6 +195,11 @@ class CMakeBuilderGUI(QWidget):
         self.clean_checkbox.setChecked(True)  # Default to clean build
         layout.addWidget(self.clean_checkbox)
 
+        # Optional features
+        self.imgui_checkbox = QCheckBox("Enable ImGui (bundled cimgui)")
+        self.imgui_checkbox.setChecked(False)
+        layout.addWidget(self.imgui_checkbox)
+
         # Build button
         self.build_button = QPushButton("Build")
         self.build_button.clicked.connect(self.start_build)
@@ -217,6 +229,7 @@ class CMakeBuilderGUI(QWidget):
         build_type = self.type_combo.currentText()
         architecture = self.arch_combo.currentText()
         clean_build = self.clean_checkbox.isChecked()
+        enable_imgui = self.imgui_checkbox.isChecked()
 
         if not os.path.isfile(os.path.join(source_dir, "CMakeLists.txt")):
             QMessageBox.critical(self, "Error", "CMakeLists.txt not found in source directory.")
@@ -224,7 +237,7 @@ class CMakeBuilderGUI(QWidget):
 
         self.output_log.clear()
         self.build_button.setEnabled(False)
-        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, clean_build)
+        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, clean_build, enable_imgui)
         self.build_thread.output_signal.connect(self.append_output)
         self.build_thread.finished_signal.connect(self.build_finished)
         self.build_thread.start()

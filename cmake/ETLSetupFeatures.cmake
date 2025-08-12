@@ -223,6 +223,19 @@ if(BUILD_CLIENT)
 		target_compile_definitions(client_libraries INTERFACE FEATURE_THEORA)
 	endif(FEATURE_THEORA)
 
+	# ImGui (cimgui) integration
+	if(FEATURE_IMGUI)
+		# Currently we support only the bundled cimgui build path
+		if(BUNDLED_IMGUI)
+			target_link_libraries(client_libraries INTERFACE bundled_imgui_int)
+			target_link_libraries(renderer_libraries INTERFACE bundled_imgui_int)
+		else()
+			message(FATAL_ERROR "FEATURE_IMGUI requires BUNDLED_IMGUI for now. Enable bundled libs or BUNDLED_IMGUI.")
+		endif()
+		target_compile_definitions(client_libraries INTERFACE FEATURE_IMGUI)
+		target_compile_definitions(renderer_libraries INTERFACE FEATURE_IMGUI)
+	endif()
+
 	if(FEATURE_IRC_CLIENT)
 		target_compile_definitions(engine_libraries INTERFACE FEATURE_IRC_CLIENT)
 		list(APPEND CLIENT_SRC ${IRC_CLIENT_FILES})

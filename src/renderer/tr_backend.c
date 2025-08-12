@@ -34,6 +34,11 @@
 
 #include "tr_local.h"
 
+#ifdef FEATURE_IMGUI
+#include <cimgui.h>
+#include <stddef.h>
+#endif
+
 backEndData_t  *backEndData;
 backEndState_t backEnd;
 
@@ -1467,9 +1472,150 @@ const void *RB_SwapBuffers(const void *data)
 
 	GL_CheckErrors();
 
-	RB_GammaScreen();
+    RB_GammaScreen();
 
-	R_DrawHudOnTop();
+    R_DrawHudOnTop();
+
+#ifdef FEATURE_IMGUI
+    // Render Dear ImGui overlay (uses fixed-function pipeline for simplicity)
+    {
+        // Create font texture on first use
+        static GLuint s_imguiFontTex = 0;
+        if (!s_imguiFontTex)
+        {
+            ImGuiIO *io = igGetIO();
+            if (io && io->Fonts)
+            {
+                unsigned char *pixels = NULL;
+                int w = 0, h = 0, bpp = 0;
+                ImFontAtlas_GetTexDataAsRGBA32(io->Fonts, &pixels, &w, &h, &bpp);
+                if (pixels && w > 0 && h > 0)
+                {
+                    glGenTextures(1, &s_imguiFontTex);
+                    glBindTexture(GL_TEXTURE_2D, s_imguiFontTex);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                    // Store our identifier
+                    io->Fonts->TexID = (void *)(intptr_t)s_imguiFontTex;
+                }
+            }
+        }
+
+        ImDrawData *draw_data = igGetDrawData();
+        if (draw_data && draw_data->CmdListsCount > 0)
+        {
+            // Backup GL state minimal set
+            GLboolean lastBlend = glIsEnabled(GL_BLEND);
+            GLboolean lastCull = glIsEnabled(GL_CULL_FACE);
+            GLboolean lastDepth = glIsEnabled(GL_DEPTH_TEST);
+            GLboolean lastScissor = glIsEnabled(GL_SCISSOR_TEST);
+            GLint lastTex; glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTex);
+            GLint lastArrayBuffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &lastArrayBuffer);
+            GLint lastElementArrayBuffer; glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &lastElementArrayBuffer);
+            GLint lastPolygonMode[2] = {0,0};
+#ifdef GL_POLYGON_MODE
+            glGetIntegerv(GL_POLYGON_MODE, lastPolygonMode);
+#endif
+            GLint lastViewport[4]; glGetIntegerv(GL_VIEWPORT, lastViewport);
+            GLint lastScissorBox[4]; glGetIntegerv(GL_SCISSOR_BOX, lastScissorBox);
+
+            // Setup render state: alpha-blending, no face culling, no depth testing, scissor enabled
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDisable(GL_CULL_FACE);
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_SCISSOR_TEST);
+
+            // Setup viewport, orthographic projection matrix
+            int fb_width  = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+            int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+            if (fb_width > 0 && fb_height > 0)
+            {
+                glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
+
+                glMatrixMode(GL_PROJECTION);
+                glPushMatrix();
+                glLoadIdentity();
+                glOrtho(0.0, draw_data->DisplaySize.x, draw_data->DisplaySize.y, 0.0, -1.0, 1.0);
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                glLoadIdentity();
+
+                // Render command lists
+                for (int n = 0; n < draw_data->CmdListsCount; n++)
+                {
+                    const ImDrawList *cmd_list = draw_data->CmdLists[n];
+                    const ImDrawVert *vtx_buffer = cmd_list->VtxBuffer.Data;
+                    const ImDrawIdx  *idx_buffer = cmd_list->IdxBuffer.Data;
+
+                    glEnableClientState(GL_VERTEX_ARRAY);
+                    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+                    glEnableClientState(GL_COLOR_ARRAY);
+                    glVertexPointer(2, GL_FLOAT, sizeof(ImDrawVert), (const GLvoid *)((const char *)vtx_buffer + offsetof(ImDrawVert, pos)));
+                    glTexCoordPointer(2, GL_FLOAT, sizeof(ImDrawVert), (const GLvoid *)((const char *)vtx_buffer + offsetof(ImDrawVert, uv)));
+                    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(ImDrawVert), (const GLvoid *)((const char *)vtx_buffer + offsetof(ImDrawVert, col)));
+
+                    for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+                    {
+                        const ImDrawCmd *pcmd = &cmd_list->CmdBuffer.Data[cmd_i];
+                        if (pcmd->UserCallback)
+                        {
+                            // User callback (not used by demo by default)
+                            pcmd->UserCallback(cmd_list, pcmd);
+                        }
+                        else
+                        {
+                            GLuint tex_id = (GLuint)(intptr_t)pcmd->TextureId;
+                            glBindTexture(GL_TEXTURE_2D, tex_id);
+
+                            // Apply scissor/clipping rectangle
+                            const ImVec4 cr = pcmd->ClipRect; // x1,y1,x2,y2
+                            glScissor((int)cr.x, (int)(fb_height - cr.w), (int)(cr.z - cr.x), (int)(cr.w - cr.y));
+
+                            if (sizeof(ImDrawIdx) == 2)
+                            {
+                                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, GL_UNSIGNED_SHORT, idx_buffer);
+                            }
+                            else
+                            {
+                                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, GL_UNSIGNED_INT, idx_buffer);
+                            }
+                        }
+                        idx_buffer += pcmd->ElemCount;
+                    }
+
+                    glDisableClientState(GL_COLOR_ARRAY);
+                    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+                    glDisableClientState(GL_VERTEX_ARRAY);
+                }
+
+                // Restore matrices
+                glMatrixMode(GL_MODELVIEW);
+                glPopMatrix();
+                glMatrixMode(GL_PROJECTION);
+                glPopMatrix();
+                glMatrixMode(GL_MODELVIEW);
+            }
+
+            // Restore state
+            if (!lastBlend) glDisable(GL_BLEND); else glEnable(GL_BLEND);
+            if (lastCull) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+            if (lastDepth) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+            if (lastScissor) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+            glBindTexture(GL_TEXTURE_2D, (GLuint)lastTex);
+            glViewport(lastViewport[0], lastViewport[1], (GLsizei)lastViewport[2], (GLsizei)lastViewport[3]);
+            glScissor(lastScissorBox[0], lastScissorBox[1], (GLsizei)lastScissorBox[2], (GLsizei)lastScissorBox[3]);
+#ifdef GL_POLYGON_MODE
+            glPolygonMode(GL_FRONT, lastPolygonMode[0]);
+            glPolygonMode(GL_BACK, lastPolygonMode[1]);
+#endif
+            glBindBuffer(GL_ARRAY_BUFFER, (GLuint)lastArrayBuffer);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)lastElementArrayBuffer);
+        }
+    }
+#endif // FEATURE_IMGUI
 
 	cmd = ( const swapBuffersCommand_t * ) data;
 
@@ -1500,7 +1646,7 @@ const void *RB_SwapBuffers(const void *data)
 
 	Ren_LogComment("***************** RB_SwapBuffers *****************\n\n\n");
 
-	ri.GLimp_SwapFrame();
+    ri.GLimp_SwapFrame();
 
 	backEnd.projection2D = qfalse;
 

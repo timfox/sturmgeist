@@ -36,6 +36,53 @@
 #include "client.h"
 #include "../qcommon/q_unicode.h"
 
+#ifdef FEATURE_IMGUI
+#include <stdbool.h>
+#include <cimgui.h>
+
+static bool     etl_imgui_initialized = false;
+static cvar_t  *cl_imgui_demo;
+
+static void ETL_ImGui_Init(void)
+{
+    if (etl_imgui_initialized)
+    {
+        return;
+    }
+    igCreateContext(NULL);
+    etl_imgui_initialized = true;
+}
+
+static void ETL_ImGui_NewFrame(void)
+{
+    if (!etl_imgui_initialized)
+    {
+        ETL_ImGui_Init();
+    }
+
+    ImGuiIO *io = igGetIO();
+    io->DisplaySize.x = (float)cls.glconfig.vidWidth;
+    io->DisplaySize.y = (float)cls.glconfig.vidHeight;
+    io->DeltaTime     = ((float)(cls.frametime > 0 ? cls.frametime : 16)) / 1000.0f;
+
+    igNewFrame();
+
+    if (cl_imgui_demo && cl_imgui_demo->integer)
+    {
+        igShowDemoWindow(NULL);
+    }
+}
+
+static void ETL_ImGui_EndFrame(void)
+{
+    if (!etl_imgui_initialized)
+    {
+        return;
+    }
+    igRender();
+}
+#endif // FEATURE_IMGUI
+
 qboolean scr_initialized;           // ready to draw
 
 cvar_t *cl_timegraph;
@@ -378,6 +425,10 @@ void SCR_Init(void)
 	cl_graphshift  = Cvar_Get("graphshift", "0", 0);
 
 	scr_initialized = qtrue;
+
+#ifdef FEATURE_IMGUI
+    cl_imgui_demo = Cvar_Get("imgui_demo", "0", 0);
+#endif
 }
 
 /**
@@ -386,6 +437,10 @@ void SCR_Init(void)
 void SCR_DrawScreenField(void)
 {
 	re.BeginFrame();
+
+#ifdef FEATURE_IMGUI
+    ETL_ImGui_NewFrame();
+#endif
 
 	if (!uivm)
 	{
@@ -455,6 +510,10 @@ void SCR_DrawScreenField(void)
 	{
 		SCR_DrawDebugGraph();
 	}
+
+#ifdef FEATURE_IMGUI
+    ETL_ImGui_EndFrame();
+#endif
 }
 
 /**
