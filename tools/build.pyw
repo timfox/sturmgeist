@@ -6,6 +6,7 @@ import stat
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QHBoxLayout, QMessageBox, QComboBox, QCheckBox
 )
+from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
 def get_preferred_encoding():
@@ -20,12 +21,13 @@ class CMakeBuildThread(QThread):
     output_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
 
-    def __init__(self, source_dir, build_dir, build_type, architecture, clean_build, enable_imgui):
+    def __init__(self, source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui):
         super().__init__()
         self.source_dir = source_dir
         self.build_dir = build_dir
         self.build_type = build_type
         self.architecture = architecture
+        self.compiler_type = compiler_type
         self.clean_build = clean_build
         self.enable_imgui = enable_imgui
 
@@ -85,6 +87,17 @@ class CMakeBuildThread(QThread):
                 "-B", self.build_dir,
                 f"-DCMAKE_BUILD_TYPE={self.build_type}"
             ]
+
+            # Generator / compiler selection
+            if sys.platform.startswith("win") and self.compiler_type.startswith("MSVC"):
+                cmake_cmd.extend(["-G", "Visual Studio 17 2022"])
+                vs_arch = "x64" if self.architecture == "x64" else "Win32"
+                cmake_cmd.extend(["-A", vs_arch])
+            else:
+                # Default to Ninja for GCC/Clang
+                cmake_cmd.extend(["-G", "Ninja"])
+                if self.compiler_type.startswith("Clang"):
+                    cmake_cmd.extend(["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"])
             
             # Add architecture flag
             if self.architecture == "x86":
@@ -179,12 +192,18 @@ class CMakeBuildThread(QThread):
 class CMakeBuilderGUI(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ET: Legacy CMake Builder")
+        self.setWindowTitle("Wolf Enemy Territory Engine Builder")
         self.setMinimumSize(700, 600)
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        # Title banner
+        title = QLabel("WOLFENSTEIN: Enemy Territory - Engine Builder")
+        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        title.setObjectName("titleLabel")
+        layout.addWidget(title)
 
         # Source dir selection
         src_layout = QHBoxLayout()
@@ -229,6 +248,15 @@ class CMakeBuilderGUI(QWidget):
         arch_layout.addWidget(self.arch_combo)
         layout.addLayout(arch_layout)
 
+        # Compiler selection
+        comp_layout = QHBoxLayout()
+        self.comp_label = QLabel("Compiler:")
+        self.compiler_combo = QComboBox()
+        self.compiler_combo.addItems(["GCC (MinGW)", "MSVC (Visual Studio)", "Clang"])
+        comp_layout.addWidget(self.comp_label)
+        comp_layout.addWidget(self.compiler_combo)
+        layout.addLayout(comp_layout)
+
         # Clean build option
         self.clean_checkbox = QCheckBox("Clean build (removes build directory first)")
         self.clean_checkbox.setChecked(True)  # Default to clean build
@@ -239,18 +267,27 @@ class CMakeBuilderGUI(QWidget):
         self.imgui_checkbox.setChecked(False)
         layout.addWidget(self.imgui_checkbox)
 
-        # Build button
+        # Action buttons
+        actions_layout = QHBoxLayout()
         self.build_button = QPushButton("Build")
         self.build_button.clicked.connect(self.start_build)
-        layout.addWidget(self.build_button)
+        self.save_log_button = QPushButton("Save Log…")
+        self.save_log_button.clicked.connect(self.save_log)
+        actions_layout.addWidget(self.build_button)
+        actions_layout.addStretch(1)
+        actions_layout.addWidget(self.save_log_button)
+        layout.addLayout(actions_layout)
 
         # Output log
         self.output_log = QTextEdit()
         self.output_log.setReadOnly(True)
+        self.output_log.setFont(QFont("Consolas", 10))
         layout.addWidget(self.output_log)
 
         self.setLayout(layout)
         self.build_thread = None
+
+        self.apply_theme()
 
     def browse_source(self):
         dir = QFileDialog.getExistingDirectory(self, "Select Source Directory", self.src_path.toPlainText())
@@ -267,6 +304,7 @@ class CMakeBuilderGUI(QWidget):
         build_dir = self.build_path.toPlainText().strip()
         build_type = self.type_combo.currentText()
         architecture = self.arch_combo.currentText()
+        compiler_type = self.compiler_combo.currentText()
         clean_build = self.clean_checkbox.isChecked()
         enable_imgui = self.imgui_checkbox.isChecked()
 
@@ -276,7 +314,7 @@ class CMakeBuilderGUI(QWidget):
 
         self.output_log.clear()
         self.build_button.setEnabled(False)
-        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, clean_build, enable_imgui)
+        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui)
         self.build_thread.output_signal.connect(self.append_output)
         self.build_thread.finished_signal.connect(self.build_finished)
         self.build_thread.start()
@@ -291,6 +329,31 @@ class CMakeBuilderGUI(QWidget):
             QMessageBox.information(self, "Build", "Build finished successfully.")
         else:
             QMessageBox.critical(self, "Build", "Build failed. See output for details.")
+
+    def save_log(self):
+        path, _ = QFileDialog.getSaveFileName(self, "Save Build Log", os.path.join(os.getcwd(), "build.log"), "Text Files (*.txt);;All Files (*)")
+        if path:
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(self.output_log.toPlainText())
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to save log: {e}")
+
+    def apply_theme(self):
+        # Simple Wolfenstein-inspired dark theme
+        self.setStyleSheet(
+            """
+            QWidget { background-color: #1a0f0f; color: #e8e0d5; }
+            #titleLabel { color: #e8e0d5; font-size: 18px; font-weight: bold; padding: 8px; border: 2px solid #7a0000; border-radius: 6px; background-color: #2a1414; }
+            QLabel { color: #e8e0d5; }
+            QLineEdit, QTextEdit { background-color: #121212; color: #e8e0d5; border: 1px solid #7a0000; border-radius: 4px; }
+            QComboBox { background-color: #121212; color: #e8e0d5; border: 1px solid #7a0000; border-radius: 4px; padding: 2px; }
+            QPushButton { background-color: #7a0000; color: #ffffff; border: 1px solid #b30000; border-radius: 4px; padding: 6px 10px; }
+            QPushButton:hover { background-color: #8c0000; }
+            QPushButton:disabled { background-color: #3a3a3a; border-color: #555; }
+            QCheckBox { color: #e8e0d5; }
+            """
+        )
 
 def main():
     app = QApplication(sys.argv)
