@@ -271,7 +271,7 @@ class CMakeBuilderGUI(QWidget):
         actions_layout = QHBoxLayout()
         self.build_button = QPushButton("Build")
         self.build_button.clicked.connect(self.start_build)
-        self.save_log_button = QPushButton("Save Log…")
+        self.save_log_button = QPushButton("Save Log")
         self.save_log_button.clicked.connect(self.save_log)
         actions_layout.addWidget(self.build_button)
         actions_layout.addStretch(1)

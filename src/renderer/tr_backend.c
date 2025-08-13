@@ -1479,30 +1479,6 @@ const void *RB_SwapBuffers(const void *data)
 #ifdef FEATURE_IMGUI
     // Render Dear ImGui overlay (uses fixed-function pipeline for simplicity)
     {
-        // Create font texture on first use
-        static GLuint s_imguiFontTex = 0;
-        if (!s_imguiFontTex)
-        {
-            ImGuiIO *io = igGetIO();
-            if (io && io->Fonts)
-            {
-                unsigned char *pixels = NULL;
-                int w = 0, h = 0, bpp = 0;
-                ImFontAtlas_GetTexDataAsRGBA32(io->Fonts, &pixels, &w, &h, &bpp);
-                if (pixels && w > 0 && h > 0)
-                {
-                    glGenTextures(1, &s_imguiFontTex);
-                    glBindTexture(GL_TEXTURE_2D, s_imguiFontTex);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-                    // Store our identifier
-                    io->Fonts->TexID = (void *)(intptr_t)s_imguiFontTex;
-                }
-            }
-        }
-
         ImDrawData *draw_data = igGetDrawData();
         if (draw_data && draw_data->CmdListsCount > 0)
         {
@@ -1546,7 +1522,7 @@ const void *RB_SwapBuffers(const void *data)
                 // Render command lists
                 for (int n = 0; n < draw_data->CmdListsCount; n++)
                 {
-                    const ImDrawList *cmd_list = draw_data->CmdLists[n];
+                    const ImDrawList *cmd_list = draw_data->CmdLists.Data[n];
                     const ImDrawVert *vtx_buffer = cmd_list->VtxBuffer.Data;
                     const ImDrawIdx  *idx_buffer = cmd_list->IdxBuffer.Data;
 
@@ -1567,7 +1543,8 @@ const void *RB_SwapBuffers(const void *data)
                         }
                         else
                         {
-                            GLuint tex_id = (GLuint)(intptr_t)pcmd->TextureId;
+                            ImTextureID tex_any = ImDrawCmd_GetTexID((ImDrawCmd*)pcmd);
+                            GLuint tex_id = (GLuint)(intptr_t)tex_any;
                             glBindTexture(GL_TEXTURE_2D, tex_id);
 
                             // Apply scissor/clipping rectangle
