@@ -2,6 +2,7 @@ import sys
 import subprocess
 import os
 import shutil
+import stat
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QHBoxLayout, QMessageBox, QComboBox, QCheckBox
 )
@@ -33,7 +34,45 @@ class CMakeBuildThread(QThread):
             # Clean build if requested
             if self.clean_build and os.path.exists(self.build_dir):
                 self.output_signal.emit(f"Cleaning build directory: {self.build_dir}\n")
-                shutil.rmtree(self.build_dir)
+                # Ensure files/dirs are writable and remove read-only/locked files
+                def _make_tree_writable(root_path: str) -> None:
+                    for root, dirs, files in os.walk(root_path, topdown=False):
+                        for name in files:
+                            fp = os.path.join(root, name)
+                            try:
+                                os.chmod(fp, stat.S_IWRITE | stat.S_IREAD)
+                            except Exception:
+                                pass
+                        for name in dirs:
+                            dp = os.path.join(root, name)
+                            try:
+                                os.chmod(dp, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+                            except Exception:
+                                pass
+
+                def _on_rm_error(func, path, exc_info):
+                    # Clear read-only attribute then retry
+                    try:
+                        os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                        func(path)
+                    except Exception:
+                        raise
+
+                try:
+                    _make_tree_writable(self.build_dir)
+                    shutil.rmtree(self.build_dir, onerror=_on_rm_error)
+                except Exception as e:
+                    # Fallback: try Windows command to force delete stubborn files (non-interactive)
+                    try:
+                        if sys.platform.startswith("win"):
+                            subprocess.run(["cmd", "/c", f"attrib -r -s -h \"{self.build_dir}\\*\" /s /d"], check=False)
+                            subprocess.run(["cmd", "/c", f"rmdir /s /q \"{self.build_dir}\""], check=True)
+                        else:
+                            raise
+                    except Exception:
+                        self.output_signal.emit(f"Failed to clean build directory: {e}\n")
+                        self.finished_signal.emit(False)
+                        return
             
             # Ensure build directory exists
             if not os.path.exists(self.build_dir):
