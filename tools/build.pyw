@@ -6,7 +6,7 @@ import stat
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QHBoxLayout, QMessageBox, QComboBox, QCheckBox
 )
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QFontDatabase
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
 def get_preferred_encoding():
@@ -203,6 +203,29 @@ class CMakeBuilderGUI(QWidget):
         title = QLabel("WOLFENSTEIN: Enemy Territory - Engine Builder")
         title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         title.setObjectName("titleLabel")
+        # Try to load custom font for the word 'WOLFENSTEIN' only
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            candidates = [
+                os.path.join(script_dir, "wolfenstein.ttf"),
+                os.path.join(script_dir, "assets", "wolfenstein.ttf"),
+                os.path.join(script_dir, "assets", "fonts", "wolfenstein.ttf"),
+                os.path.join(os.getcwd(), "wolfenstein.ttf"),
+            ]
+            font_family = None
+            for path in candidates:
+                if os.path.isfile(path):
+                    fid = QFontDatabase.addApplicationFont(path)
+                    if fid >= 0:
+                        fams = QFontDatabase.applicationFontFamilies(fid)
+                        if fams:
+                            font_family = fams[0]
+                            break
+            if font_family:
+                title.setTextFormat(Qt.TextFormat.RichText)
+                title.setText(f"<span style=\"font-family: '{font_family}';\">WOLFENSTEIN</span><span>: Enemy Territory - Engine Builder</span>")
+        except Exception:
+            pass
         layout.addWidget(title)
 
         # Source dir selection
