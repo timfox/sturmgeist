@@ -37,6 +37,119 @@
 #include "client.h"
 #include "../qcommon/q_unicode.h"
 
+#ifdef FEATURE_IMGUI
+#include <stdbool.h>
+#include <cimgui.h>
+
+static bool     con_imgui_initialized = false;
+static cvar_t  *con_imgui_enabled;
+
+/**
+ * @brief Initialize IMGUI for console use
+ */
+static void Con_ImGui_Init(void)
+{
+	if (con_imgui_initialized)
+	{
+		return;
+	}
+	
+	// Note: We don't create a new context here if one already exists
+	// The main IMGUI context should be managed by cl_scrn.c
+	con_imgui_initialized = true;
+	Com_Printf("Console IMGUI initialized\n");
+}
+
+/**
+ * @brief Shutdown IMGUI for console
+ */
+static void Con_ImGui_Shutdown(void)
+{
+	if (!con_imgui_initialized)
+	{
+		return;
+	}
+	
+	con_imgui_initialized = false;
+	Com_Printf("Console IMGUI shutdown\n");
+}
+
+/**
+ * @brief Toggle IMGUI console window
+ */
+static void Con_ImGui_Toggle_f(void)
+{
+	if (con_imgui_enabled)
+	{
+		Cvar_SetValue("con_imgui", !con_imgui_enabled->integer);
+		Com_Printf("IMGUI Console %s\n", con_imgui_enabled->integer ? "enabled" : "disabled");
+	}
+}
+
+/**
+ * @brief Draw IMGUI console window
+ */
+static void Con_ImGui_Draw(void)
+{
+	if (!con_imgui_initialized || !con_imgui_enabled || !con_imgui_enabled->integer)
+	{
+		return;
+	}
+	
+	// Create a console window with IMGUI
+	if (igBegin("Console", NULL, ImGuiWindowFlags_None))
+	{
+		// Add console content here
+		igText("IMGUI Console Window");
+		igSeparator();
+		
+		// Display recent console text
+		for (int i = MAX(0, con.current - 10); i <= con.current; i++)
+		{
+			if (i < 0) continue;
+			
+			unsigned int *line = con.text + (i % con.maxTotalLines) * con.linewidth;
+			static char lineText[512];
+			int j;
+			
+			// Convert console line to string
+			for (j = 0; j < con.linewidth && j < sizeof(lineText) - 1; j++)
+			{
+				lineText[j] = line[j] & 0xFF;
+				if (lineText[j] == 0) lineText[j] = ' ';
+			}
+			lineText[j] = '\0';
+			
+			// Remove trailing spaces
+			while (j > 0 && lineText[j-1] == ' ')
+			{
+				lineText[--j] = '\0';
+			}
+			
+			if (j > 0)
+			{
+				igText("%s", lineText);
+			}
+		}
+		
+		igSeparator();
+		
+		// Input field for console commands
+		static char inputBuffer[256] = "";
+		if (igInputText("Command", inputBuffer, sizeof(inputBuffer), ImGuiInputTextFlags_EnterReturnsTrue, NULL, NULL))
+		{
+			// Execute console command
+			if (strlen(inputBuffer) > 0)
+			{
+				Cmd_ExecuteString(inputBuffer);
+				inputBuffer[0] = '\0'; // Clear input
+			}
+		}
+	}
+	igEnd();
+}
+#endif
+
 #define CONSOLE_COLOR  COLOR_WHITE
 #define DEFAULT_CONSOLE_WIDTH   158
 
@@ -522,6 +635,11 @@ void Con_Init(void)
 	con_scale = Cvar_GetAndDescribe("con_scale", "1.0", CVAR_ARCHIVE_ND, "Scaling factor for console font size.");
 	Cvar_CheckRange(con_scale, 0.5f, 4.0f, qfalse);
 
+#ifdef FEATURE_IMGUI
+	con_imgui_enabled = Cvar_GetAndDescribe("con_imgui", "0", CVAR_ARCHIVE, "Enable IMGUI console window.");
+	Con_ImGui_Init();
+#endif
+
 	Field_Clear(&g_consoleField);
 	g_consoleField.widthInChars = Con_ConsoleFieldWidth();
 	for (i = 0; i < COMMAND_HISTORY; i++)
@@ -535,6 +653,10 @@ void Con_Init(void)
 	Cmd_AddCommand("toggleconsole", Con_ToggleConsole_f, "Toggles the console.");
 	Cmd_AddCommand("clear", Con_Clear_f, "Clears console content.");
 	Cmd_AddCommand("condump", Con_Dump_f, "Dumps console content to disk.", Cmd_CompleteTxtName);
+
+#ifdef FEATURE_IMGUI
+	Cmd_AddCommand("toggleimguiconsole", Con_ImGui_Toggle_f, "Toggles the IMGUI console window.");
+#endif
 }
 
 /**
@@ -545,6 +667,11 @@ void Con_Shutdown(void)
 	Cmd_RemoveCommand("toggleconsole");
 	Cmd_RemoveCommand("clear");
 	Cmd_RemoveCommand("condump");
+
+#ifdef FEATURE_IMGUI
+	Cmd_RemoveCommand("toggleimguiconsole");
+	Con_ImGui_Shutdown();
+#endif
 }
 
 /**
@@ -1124,6 +1251,11 @@ void Con_DrawConsole(void)
 	Con_CheckResize();
 
 	Con_DrawSolidConsole(con.displayFrac);
+
+#ifdef FEATURE_IMGUI
+	// Draw IMGUI console window if enabled
+	Con_ImGui_Draw();
+#endif
 }
 
 /**
