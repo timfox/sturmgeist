@@ -1,8 +1,8 @@
-ET: Legacy [![CI](https://github.com/etlegacy/etlegacy/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/etlegacy/etlegacy/actions/workflows/ci.yml?query=branch%3Amaster) [![ETLBuild](https://github.com/etlegacy/etlegacy/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/etlegacy/etlegacy/actions/workflows/build.yml) [![etlegacy](https://snapcraft.io/etlegacy/badge.svg)](https://snapcraft.io/etlegacy)  [![Analysis status](https://scan.coverity.com/projects/1160/badge.svg)](https://scan.coverity.com/projects/1160)  
+Sturmgeist [![CI](https://github.com/etlegacy/etlegacy/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/etlegacy/etlegacy/actions/workflows/ci.yml?query=branch%3Amaster) [![ETLBuild](https://github.com/etlegacy/etlegacy/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/etlegacy/etlegacy/actions/workflows/build.yml) [![etlegacy](https://snapcraft.io/etlegacy/badge.svg)](https://snapcraft.io/etlegacy)  [![Analysis status](https://scan.coverity.com/projects/1160/badge.svg)](https://scan.coverity.com/projects/1160)  
 [![chat](https://img.shields.io/discord/260750790203932672.svg?logo=discord)](https://discord.gg/UBAZFys)
 ==========
 
-*A second breath of life for Wolfenstein: Enemy Territory*
+*A fork of Wolfenstein ET: Legacy*
 
 * Website: [https://www.etlegacy.com](https://www.etlegacy.com)
 * Downloads: [https://www.etlegacy.com/download](https://www.etlegacy.com/download)
@@ -17,11 +17,14 @@ ET: Legacy [![CI](https://github.com/etlegacy/etlegacy/actions/workflows/ci.yml/
 
 ## INTRODUCTION
 
+**Sturmgeist** is a research and development branch of ET: Legacy focused on modernizing the id Tech 3 engine. The primary goals of Sturmgeist are to bring Vulkan rendering support to a GPLv3 version of id Tech 3, implement modern libraries, and update the codebase to leverage C++23 features. This effort aims to improve performance, maintainability, and compatibility with current and future hardware, while serving as a testbed for advanced engine features and architectural improvements.
+
+
 ET: Legacy is an open source project based on the code of [Wolfenstein: Enemy Territory](https://www.splashdamage.com/games/wolfenstein-enemy-territory/) which [was released](https://www.splashdamage.com/news/wolfenstein-enemy-territory-goes-open-source/) in 2010 under the terms of the GPLv3.
 
 There are two aspects to this project:
 
-* An updated game engine, **ET: Legacy**, which aims to fix bugs and security exploits, remove old dependencies, add useful features and modernize its graphics while still remaining compatible with ET 2.60b and as many of its mods as possible.
+* An updated game engine, **id Tech 3**, which aims to fix bugs and security exploits, remove old dependencies, add useful features and modernize its graphics while still remaining compatible with ET 2.60b and as many of its mods as possible.
 * A new mod, **Legacy**, which aims to add many useful features and improvements while staying close to the original gameplay, as well as being lightweight and extensible through Lua scripts.
 
 For more information consult our [wiki](https://github.com/etlegacy/etlegacy/wiki).
@@ -29,10 +32,6 @@ For more information consult our [wiki](https://github.com/etlegacy/etlegacy/wik
 ## CONTRIBUTING
 
 See [CONTRIBUTING](CONTRIBUTING.md).
-
-## SECURITY POLICY
-
-See [SECURITY](SECURITY.md).
 
 ## CERTIFICATE SIGNING
 
@@ -43,9 +42,6 @@ ET: Legacy Windows installers are now signed thanks to [SignPath Foundation](htt
 ### Game data
 
 Wolfenstein: Enemy Territory is a free release, and can be downloaded from [Splash Damage](https://www.splashdamage.com/games/wolfenstein-enemy-territory/).
-
-This source release contains only the engine and mod code but not any game data,
-which is still covered by the original EULA and must be obeyed as usual.
 
 In order to run ET: Legacy you will need to copy the original *pak0.pk3* assets file
 to the etmain folder. In addition, third party mods might also require the *pak1.pk3*
@@ -262,6 +258,52 @@ and open the resulting project in Visual Studio.
   automatically if you select that option during Git installation.
 
 
+### Android
+
+Install:
+
+1. **Android Studio** (latest version recommended)
+2. **Android NDK** (r21 or newer, can be installed via Android Studio's SDK Manager)
+3. **CMake** (comes with Android Studio)
+4. **Git** (to clone the repository)
+5. A device or emulator running Android 5.0 (Lollipop, API 21) or newer
+
+* option A: **Android Studio (Recommended)**
+
+    1. Clone the repository:
+        ```sh
+        $ git clone https://github.com/etlegacy/etlegacy.git
+        $ cd etlegacy
+        ```
+    2. Open Android Studio and select "Open an existing project". Choose the `android` directory inside the cloned repository.
+    3. Let Android Studio configure the project and download any required dependencies.
+    4. Connect your Android device or start an emulator.
+    5. Click "Run" to build and install ET: Legacy on your device.
+
+* option B: **Command Line**
+
+    1. Clone the repository:
+        ```sh
+        $ git clone https://github.com/etlegacy/etlegacy.git
+        $ cd etlegacy/android
+        ```
+    2. Set up the environment variables for the Android NDK and SDK if not already set.
+    3. Build the project using Gradle:
+        ```sh
+        $ ./gradlew assembleDebug
+        ```
+    4. The resulting APK will be located in `android/app/build/outputs/apk/debug/`.
+    5. Install the APK on your device:
+        ```sh
+        $ adb install -r app/build/outputs/apk/debug/app-debug.apk
+        ```
+
+**NOTES:**
+
+  * Make sure your device has "USB debugging" enabled if installing directly.
+  * If you encounter build errors, ensure the correct NDK version is selected in Android Studio's project structure settings.
+  * For more information and troubleshooting, refer to the [wiki](https://github.com/etlegacy/etlegacy/wiki/Android-Build).
+
 ### macOS
 
 Install:
@@ -374,74 +416,3 @@ or 1 under the `RPI` section within the `easybuild.sh` script and run `./easybui
 
 To install ET Legacy using Snap Store/Snapcraft follow instructions in: 
 [etlegacy-snap repo](https://github.com/etlegacy/etlegacy-snap)
-
-## LICENSE
-
-### ET: Legacy
-
-Wolfenstein: Enemy Territory GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
-
-OpenWolf GPL Source Code
-Copyright (C) 2011 Dusan Jocic
-
-XreaL GPL Source Code (renderer2)
-Copyright (C) 2010-2011 Robert Beckebans
-
-ET: Legacy
-Copyright (C) 2012-2024 ET:Legacy Team <mail@etlegacy.com>
-
-  ET: Legacy is free software: you can redistribute it and/or modify it under
-  the terms of the GNU General Public License as published by the Free Software
-  Foundation, either version 3 of the License, or (at your option) any later
-  version.
-
-  ET: Legacy is distributed in the hope that it will be useful, but WITHOUT ANY
-  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-  A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License along with
-  ET: Legacy (see COPYING.txt). If not, see <https://www.gnu.org/licenses/>.
-
-  ADDITIONAL TERMS:  The Wolfenstein: Enemy Territory GPL Source Code is also
-  subject to certain additional terms. You should have received a copy of these
-  additional terms immediately following the terms and conditions of the GNU GPL
-  which accompanied the Wolf ET Source Code.  If not, please request a copy in
-  writing from id Software at id Software LLC, c/o ZeniMax Media Inc., Suite 120,
-  Rockville, Maryland 20850 USA.
-
-  EXCLUDED CODE:  The code described below and contained in the Wolfenstein:
-  Enemy Territory GPL Source Code release is not part of the Program covered by
-  the GPL and is expressly excluded from its terms.  You are solely responsible
-  for obtaining from the copyright holder a license for such code and complying
-  with the applicable license terms.
-
-
-### MD4 Message-Digest Algorithm
-
-Copyright (C) 1991-1992, RSA Data Security, Inc. Created 1991. All rights reserved.
-
-  License to copy and use this software is granted provided that it is identified
-  as the "RSA Data Security, Inc. MD4 Message-Digest Algorithm" in all mater
-  ial mentioning or referencing this software or this function.
-
-  License is also granted to make and use derivative works provided that such work
-  s are identified as "derived from the RSA Data Security, Inc. MD4 Message-Digest
-  Algorithm" in all material mentioning or referencing the derived work.
-
-  RSA Data Security, Inc. makes no representations concerning either the merchanta
-  bility of this software or the suitability of this software for any particular p
-  urpose. It is provided "as is" without express or implied warranty of any
-  kind.
-
-
-### MD5 Message-Digest Algorithm
-
-The MD5 algorithm was developed by Ron Rivest. The public domain C language
-implementation used in this program was written by Colin Plumb in 1993, no copyright
-is claimed.
-
-  This software is in the public domain. Permission to use, copy, modify, and
-  distribute this software and its documentation for any purpose and without fee is
-  hereby granted, without any conditions or restrictions. This software is provided
-  "as is" without express or implied warranty.
