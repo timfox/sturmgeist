@@ -21,7 +21,8 @@ class CMakeBuildThread(QThread):
     output_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
 
-    def __init__(self, source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui):
+    def __init__(self, source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui,
+                 build_client_mod=False, build_server_mod=False, build_mod_pk3=False, copy_mod_outputs=True):
         super().__init__()
         self.source_dir = source_dir
         self.build_dir = build_dir
@@ -30,6 +31,10 @@ class CMakeBuildThread(QThread):
         self.compiler_type = compiler_type
         self.clean_build = clean_build
         self.enable_imgui = enable_imgui
+        self.build_client_mod = build_client_mod
+        self.build_server_mod = build_server_mod
+        self.build_mod_pk3 = build_mod_pk3
+        self.copy_mod_outputs = copy_mod_outputs
 
     def run(self):
         try:
@@ -108,7 +113,7 @@ class CMakeBuildThread(QThread):
             # Disable downloads for offline compilation
             cmake_cmd.extend([
                 "-DINSTALL_GEOIP=OFF",
-                "-DINSTALL_WOLFADMIN=OFF", 
+                "-DINSTALL_WOLFADMIN=OFF",
                 "-DINSTALL_EXTRA=OFF"
             ])
 
@@ -117,6 +122,16 @@ class CMakeBuildThread(QThread):
                 cmake_cmd.append("-DFEATURE_IMGUI=ON")
                 # Prefer bundled libs for simplicity
                 cmake_cmd.append("-DBUNDLED_LIBS=ON")
+                # Use system SDL2 to avoid build issues
+                cmake_cmd.append("-DBUNDLED_SDL=OFF")
+
+            # Gamecode build toggles
+            if self.build_client_mod:
+                cmake_cmd.append("-DBUILD_CLIENT_MOD=ON")
+            if self.build_server_mod:
+                cmake_cmd.append("-DBUILD_SERVER_MOD=ON")
+            if self.build_mod_pk3:
+                cmake_cmd.append("-DBUILD_MOD_PK3=ON")
             
             self.output_signal.emit(f"Running: {' '.join(cmake_cmd)}\n")
             encoding = get_preferred_encoding()
@@ -183,6 +198,68 @@ class CMakeBuildThread(QThread):
                 self.finished_signal.emit(False)
                 return
 
+            # If gamecode selected, build specific targets explicitly to ensure they are produced
+            mod_targets = []
+            if self.build_client_mod:
+                mod_targets.extend(["ui", "cgame"])
+            if self.build_server_mod:
+                mod_targets.append("qagame")
+            if self.build_mod_pk3:
+                mod_targets.append("mod_pk3")
+
+            if mod_targets:
+                mod_cmd = [
+                    "cmake", "--build", self.build_dir,
+                    "--config", self.build_type,
+                    "--target", *mod_targets
+                ]
+                self.output_signal.emit(f"\nRunning: {' '.join(mod_cmd)}\n")
+                try:
+                    proc = subprocess.Popen(
+                        mod_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        encoding=encoding,
+                        errors="replace"
+                    )
+                except TypeError:
+                    proc = subprocess.Popen(
+                        mod_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT
+                    )
+                for raw_line in proc.stdout:
+                    if isinstance(raw_line, bytes):
+                        line = raw_line.decode(encoding, errors="replace")
+                    else:
+                        line = raw_line
+                    self.output_signal.emit(line)
+                proc.wait()
+                if proc.returncode != 0:
+                    self.output_signal.emit("Gamecode build failed.\n")
+                    self.finished_signal.emit(False)
+                    return
+
+            # Optionally copy built mod outputs to dist/legacy for immediate run
+            if self.copy_mod_outputs and (self.build_client_mod or self.build_server_mod or self.build_mod_pk3):
+                try:
+                    mod_build_dir = os.path.join(self.build_dir, "legacy")
+                    mod_dist_dir = os.path.join(self.source_dir, "dist", "legacy")
+                    if os.path.isdir(mod_build_dir):
+                        os.makedirs(mod_dist_dir, exist_ok=True)
+                        copied = 0
+                        for name in os.listdir(mod_build_dir):
+                            if not (name.endswith(".dll") or name.endswith(".pk3")):
+                                continue
+                            src = os.path.join(mod_build_dir, name)
+                            dst = os.path.join(mod_dist_dir, name)
+                            shutil.copy2(src, dst)
+                            copied += 1
+                        self.output_signal.emit(f"Copied {copied} gamecode files to {mod_dist_dir}\n")
+                except Exception as e:
+                    self.output_signal.emit(f"Warning: failed to copy mod outputs: {e}\n")
+
             self.output_signal.emit("\nBuild finished successfully.\n")
             self.finished_signal.emit(True)
         except Exception as e:
@@ -194,6 +271,8 @@ class CMakeBuilderGUI(QWidget):
         super().__init__()
         self.setWindowTitle("Wolf Enemy Territory Engine Builder")
         self.setMinimumSize(700, 600)
+        # Set Univers as the regular font for the whole application
+        self.setFont(QFont("Univers"))
         self.init_ui()
 
     def init_ui(self):
@@ -223,7 +302,7 @@ class CMakeBuilderGUI(QWidget):
                             break
             if font_family:
                 title.setTextFormat(Qt.TextFormat.RichText)
-                title.setText(f"<span style=\"font-family: '{font_family}';\">WOLFENSTEIN</span><span>: Enemy Territory - Engine Builder</span>")
+                title.setText(f"<span style=\"font-family: '{font_family}'; font-size: 64px; font-weight: regular;\">Wolfenstein</span>")
         except Exception:
             pass
         layout.addWidget(title)
@@ -281,14 +360,28 @@ class CMakeBuilderGUI(QWidget):
         layout.addLayout(comp_layout)
 
         # Clean build option
-        self.clean_checkbox = QCheckBox("Clean build (removes build directory first)")
+        self.clean_checkbox = QCheckBox("Clean build")
         self.clean_checkbox.setChecked(True)  # Default to clean build
         layout.addWidget(self.clean_checkbox)
 
         # Optional features
-        self.imgui_checkbox = QCheckBox("Enable ImGui (bundled cimgui)")
-        self.imgui_checkbox.setChecked(False)
+        self.imgui_checkbox = QCheckBox("Enable ImGui")
+        self.imgui_checkbox.setChecked(True)
         layout.addWidget(self.imgui_checkbox)
+
+        # Gamecode build options
+        self.build_client_mod_checkbox = QCheckBox("Build client (ui, cgame)")
+        self.build_client_mod_checkbox.setChecked(True)
+        self.build_server_mod_checkbox = QCheckBox("Build server (qagame)")
+        self.build_server_mod_checkbox.setChecked(False)
+        self.build_mod_pk3_checkbox = QCheckBox("Package pk3")
+        self.build_mod_pk3_checkbox.setChecked(False)
+        self.copy_mod_outputs_checkbox = QCheckBox("Copy gamecode outputs to dist/legacy")
+        self.copy_mod_outputs_checkbox.setChecked(True)
+        layout.addWidget(self.build_client_mod_checkbox)
+        layout.addWidget(self.build_server_mod_checkbox)
+        layout.addWidget(self.build_mod_pk3_checkbox)
+        layout.addWidget(self.copy_mod_outputs_checkbox)
 
         # Action buttons
         actions_layout = QHBoxLayout()
@@ -330,6 +423,10 @@ class CMakeBuilderGUI(QWidget):
         compiler_type = self.compiler_combo.currentText()
         clean_build = self.clean_checkbox.isChecked()
         enable_imgui = self.imgui_checkbox.isChecked()
+        build_client_mod = self.build_client_mod_checkbox.isChecked()
+        build_server_mod = self.build_server_mod_checkbox.isChecked()
+        build_mod_pk3 = self.build_mod_pk3_checkbox.isChecked()
+        copy_mod_outputs = self.copy_mod_outputs_checkbox.isChecked()
 
         if not os.path.isfile(os.path.join(source_dir, "CMakeLists.txt")):
             QMessageBox.critical(self, "Error", "CMakeLists.txt not found in source directory.")
@@ -337,7 +434,8 @@ class CMakeBuilderGUI(QWidget):
 
         self.output_log.clear()
         self.build_button.setEnabled(False)
-        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui)
+        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, compiler_type, clean_build,
+                                            enable_imgui, build_client_mod, build_server_mod, build_mod_pk3, copy_mod_outputs)
         self.build_thread.output_signal.connect(self.append_output)
         self.build_thread.finished_signal.connect(self.build_finished)
         self.build_thread.start()
@@ -366,7 +464,7 @@ class CMakeBuilderGUI(QWidget):
         # Simple Wolfenstein-inspired dark theme
         self.setStyleSheet(
             """
-            QWidget { background-color: #1a0f0f; color: #e8e0d5; }
+            QWidget { background-color: #1a0f0f; color: #e8e0d5; font-family: 'Univers', sans-serif; }
             #titleLabel { color: #e8e0d5; font-size: 18px; font-weight: bold; padding: 8px; border: 2px solid #7a0000; border-radius: 6px; background-color: #2a1414; }
             QLabel { color: #e8e0d5; }
             QLineEdit, QTextEdit { background-color: #121212; color: #e8e0d5; border: 1px solid #7a0000; border-radius: 4px; }
@@ -374,12 +472,17 @@ class CMakeBuilderGUI(QWidget):
             QPushButton { background-color: #7a0000; color: #ffffff; border: 1px solid #b30000; border-radius: 4px; padding: 6px 10px; }
             QPushButton:hover { background-color: #8c0000; }
             QPushButton:disabled { background-color: #3a3a3a; border-color: #555; }
-            QCheckBox { color: #e8e0d5; }
+            QCheckBox { color: #e8e0d5; background-color: #121212; border: 1px solid #7a0000; border-radius: 4px; padding: 4px 8px; }
+            QCheckBox::indicator { width: 18px; height: 18px; border-radius: 3px; background: #1a0f0f; border: 1px solid #7a0000; }
+            QCheckBox::indicator:checked { background: #7a0000; border: 1px solid #b30000; }
+            QCheckBox::indicator:unchecked { background: #121212; border: 1px solid #7a0000; }
             """
         )
 
 def main():
     app = QApplication(sys.argv)
+    # Set Univers as the regular font for the whole application
+    app.setFont(QFont("Univers"))
     window = CMakeBuilderGUI()
     window.show()
     sys.exit(app.exec())
