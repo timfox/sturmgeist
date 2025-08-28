@@ -97,3 +97,6 @@ gradle/
 # Package Managers
 **/.pixi/
 **/__pycache__/
+
+# Large game asset files
+*.pk3
