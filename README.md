@@ -17,7 +17,7 @@ Sturmgeist [![CI](https://github.com/etlegacy/etlegacy/actions/workflows/ci.yml/
 
 ## INTRODUCTION
 
-**Sturmgeist** is a research and development branch of ET: Legacy focused on modernizing the id Tech 3 engine. The primary goals of Sturmgeist are to bring Vulkan rendering support to a GPLv3 version of id Tech 3, implement modern libraries, and update the codebase to leverage C++23 features. This effort aims to improve performance, maintainability, and compatibility with current and future hardware, while serving as a testbed for advanced engine features and architectural improvements.
+**Sturmgeist** is a research and development branch of ET: Legacy focused on modernizing the id Tech 3 engine. The primary goals of Sturmgeist are to bring Vulkan rendering support to a GPLv3 version of id Tech 3, implement modern libraries, and update the codebase to leverage C++23 features (upgraded from C++11). This effort aims to improve performance, maintainability, and compatibility with current and future hardware, while serving as a testbed for advanced engine features and architectural improvements.
 
 
 ET: Legacy is an open source project based on the code of [Wolfenstein: Enemy Territory](https://www.splashdamage.com/games/wolfenstein-enemy-territory/) which [was released](https://www.splashdamage.com/news/wolfenstein-enemy-territory-goes-open-source/) in 2010 under the terms of the GPLv3.

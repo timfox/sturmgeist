@@ -152,7 +152,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ${CMAKE_TARGETS_FOLDER})
 
 # Set language levels
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 23)  # Updated from C++11 to C++23
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 99)  # engine is intentionally C99 while mods remain C90
 
 # Find and setup programs the build needs
