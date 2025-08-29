@@ -72,7 +72,7 @@ option(FEATURE_TRACKER			"Enable extended server statistics (server)"			ON)
 option(FEATURE_MULTIVIEW		"Enable multiview support (mod)"						ON)
 option(FEATURE_EDV				"Enable extended demo viewer support (mod)"				ON)
 option(FEATURE_ANTICHEAT		"Enable server side anti-wallhack code (server)"		ON)
-option(FEATURE_AUTOUPDATE		"Enable updater which downloads latest ET:L files"		ON)
+option(FEATURE_AUTOUPDATE		"Enable updater which downloads latest ET:L files"		OFF)
 option(FEATURE_RENDERER1		"Build and use the vanilla renderer (OpenGL 1/2)"		ON)
 option(FEATURE_RENDERER2		"Build and use the extended renderer (OpenGL 3)"		OFF)
 option(FEATURE_RENDERER_GLES	"Build and use OpenGL ES renderer"						OFF)
@@ -102,11 +102,11 @@ cmake_dependent_option(FEATURE_RATING	"Enable skill rating support (mod)"				ON 
 cmake_dependent_option(FEATURE_PRESTIGE	"Enable prestige support (mod)"					ON "FEATURE_DBMS" OFF)
 cmake_dependent_option(FEATURE_OMNIBOT	"Enable Omni-bot support (mod)"					ON "( NOT MINGW AND WIN32 ) OR FORCE_OMNIBOT OR CMAKE_SYSTEM_NAME MATCHES Linux" OFF)
 
-option(INSTALL_EXTRA			"Install extra add-ons (omni-bot, geoip, wolfadmin)."	ON)
+option(INSTALL_EXTRA			"Install extra add-ons (omni-bot, geoip, wolfadmin)."	OFF)
 
-cmake_dependent_option(INSTALL_OMNIBOT		"Install Omni-bot"							ON "FEATURE_OMNIBOT AND INSTALL_EXTRA" OFF)
-cmake_dependent_option(INSTALL_GEOIP		"Install GeoLite geolocation database"		ON "INSTALL_EXTRA" OFF)
-cmake_dependent_option(INSTALL_WOLFADMIN	"Install WolfAdmin enhancement suite"		ON "INSTALL_EXTRA" OFF)
+cmake_dependent_option(INSTALL_OMNIBOT		"Install Omni-bot"							OFF "FEATURE_OMNIBOT AND INSTALL_EXTRA" OFF)
+cmake_dependent_option(INSTALL_GEOIP		"Install GeoLite geolocation database"		OFF "INSTALL_EXTRA" OFF)
+cmake_dependent_option(INSTALL_WOLFADMIN	"Install WolfAdmin enhancement suite"		OFF "INSTALL_EXTRA" OFF)
 
 option(CLIENT_GLVND				"Link against GLVND OpenGL libraries"					OFF)
 
