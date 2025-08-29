@@ -1,0 +1,14 @@
+Starting enhanced debug logging for etl.exe 
+Current directory: Z:\sturmgeist\dist 
+Timestamp: Fri 08/29/2025 10:02:57.39 
+Executable found: Z:\sturmgeist\dist\etl.exe 
+ 
+Listing DLLs in current directory: 
+cimgui.dll
+renderer_opengl1_x64.dll
+ 
+Starting game with command: 
+"etl.exe" +set fs_game legacy +set fs_homepath "." +set logfile 3 +set developer 1 +set com_logfile 2 +set logfilename "etl.log" 
+Game launched at 10:03:00.24 
+Check for etl.log after the game exits. 
+If no log file appears, check etl_debug.txt for diagnostic information. 

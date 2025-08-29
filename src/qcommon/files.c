@@ -623,25 +623,83 @@ char *FS_BuildOSPath(const char *base, const char *game, const char *qpath)
 	char        temp[MAX_OSPATH];
 	static char ospath[2][MAX_OSPATH];
 	static int  toggle;
+	size_t      baseLen;
+	size_t      tempLen;
+	size_t      gameLen;
+	size_t      qpathLen;
 
 	toggle ^= 1;        // flip-flop to allow two returns without clash
+
+	// Clear the buffer first to avoid any potential issues with uninitialized memory
+	Com_Memset(ospath[toggle], 0, sizeof(ospath[0]));
+	Com_Memset(temp, 0, sizeof(temp));
+
+	if (!base || !base[0])
+	{
+		// Handle null or empty base path
+		return ospath[toggle];
+	}
 
 	if (!game || !game[0])
 	{
 		game = fs_gamedir;
 	}
 
-	if (qpath)
+	// Safely build the path with explicit size checks
+	if (qpath && qpath[0])
 	{
-		Com_sprintf(temp, sizeof(temp), "/%s/%s", game, qpath);
+		gameLen = strlen(game);
+		qpathLen = strlen(qpath);
+		
+		// Ensure we don't overflow temp
+		if (gameLen + qpathLen + 3 < MAX_OSPATH) // 3 for '/' + '/' + null terminator
+		{
+			temp[0] = '/';
+			memcpy(temp + 1, game, gameLen);
+			temp[gameLen + 1] = '/';
+			memcpy(temp + gameLen + 2, qpath, qpathLen);
+			temp[gameLen + qpathLen + 2] = '\0';
+		}
+		else
+		{
+			// Path too long, truncate safely
+			Com_sprintf(temp, sizeof(temp), "/%s/%s", game, qpath);
+		}
 	}
 	else
 	{
-		Com_sprintf(temp, sizeof(temp), "/%s", game);
+		gameLen = strlen(game);
+		
+		// Ensure we don't overflow temp
+		if (gameLen + 2 < MAX_OSPATH) // 2 for '/' + null terminator
+		{
+			temp[0] = '/';
+			memcpy(temp + 1, game, gameLen);
+			temp[gameLen + 1] = '\0';
+		}
+		else
+		{
+			// Path too long, truncate safely
+			Com_sprintf(temp, sizeof(temp), "/%s", game);
+		}
 	}
 
 	FS_ReplaceSeparators(temp);
-	Com_sprintf(ospath[toggle], sizeof(ospath[0]), "%s%s", base, temp);
+	
+	// Safely combine base and temp
+	baseLen = strlen(base);
+	tempLen = strlen(temp);
+	
+	if (baseLen + tempLen < MAX_OSPATH)
+	{
+		memcpy(ospath[toggle], base, baseLen);
+		memcpy(ospath[toggle] + baseLen, temp, tempLen + 1); // +1 for null terminator
+	}
+	else
+	{
+		// Path too long, truncate safely
+		Com_sprintf(ospath[toggle], sizeof(ospath[0]), "%s%s", base, temp);
+	}
 
 	return ospath[toggle];
 }
@@ -1151,10 +1209,22 @@ fileHandle_t FS_FOpenFileWrite(const char *fileName)
 		Com_Error(ERR_FATAL, "FS_FOpenFileWrite: Filesystem call made without initialization");
 	}
 
+	// Validate the input
+	if (!fileName || !fileName[0])
+	{
+		Com_Printf("FS_FOpenFileWrite: Empty filename\n");
+		return 0;
+	}
+
 	f              = FS_HandleForFile();
 	fsh[f].zipFile = qfalse;
 
 	ospath = FS_BuildOSPath(fs_homepath->string, fs_gamedir, fileName);
+	if (!ospath || !ospath[0])
+	{
+		Com_Printf("FS_FOpenFileWrite: Failed to build OS path\n");
+		return 0;
+	}
 
 	if (fs_debug->integer)
 	{
@@ -1168,9 +1238,30 @@ fileHandle_t FS_FOpenFileWrite(const char *fileName)
 		return 0;
 	}
 
+	// Use C++23 compatible file opening
+#if __cplusplus >= 202300L
+	// Make sure the file mode is explicitly set for C++23 compatibility
+	FILE* file = fopen(ospath, "wb");
+	fsh[f].handleFiles.file.o = file;
+#else
+	// Traditional file opening for older C++ standards
 	fsh[f].handleFiles.file.o = Sys_FOpen(ospath, "wb");
+#endif
 
-	Q_strncpyz(fsh[f].name, fileName, sizeof(fsh[f].name));
+	// Safely copy the filename
+	if (fileName)
+	{
+		size_t nameLen = strlen(fileName);
+		size_t maxLen = sizeof(fsh[f].name) - 1;
+		size_t copyLen = nameLen < maxLen ? nameLen : maxLen;
+		
+		memcpy(fsh[f].name, fileName, copyLen);
+		fsh[f].name[copyLen] = '\0';
+	}
+	else
+	{
+		fsh[f].name[0] = '\0';
+	}
 
 	fsh[f].handleSync = qfalse;
 	if (!fsh[f].handleFiles.file.o)
@@ -1237,12 +1328,37 @@ fileHandle_t FS_FOpenFileAppend(const char *fileName)
 		Com_Error(ERR_FATAL, "FS_FOpenFileAppend: Filesystem call made without initialization");
 	}
 
+	// Validate the input
+	if (!fileName || !fileName[0])
+	{
+		Com_Printf("FS_FOpenFileAppend: Empty filename\n");
+		return 0;
+	}
+
 	f              = FS_HandleForFile();
 	fsh[f].zipFile = qfalse;
 
-	Q_strncpyz(fsh[f].name, fileName, sizeof(fsh[f].name));
+	// Safely copy the filename
+	if (fileName)
+	{
+		size_t nameLen = strlen(fileName);
+		size_t maxLen = sizeof(fsh[f].name) - 1;
+		size_t copyLen = nameLen < maxLen ? nameLen : maxLen;
+		
+		memcpy(fsh[f].name, fileName, copyLen);
+		fsh[f].name[copyLen] = '\0';
+	}
+	else
+	{
+		fsh[f].name[0] = '\0';
+	}
 
 	ospath = FS_BuildOSPath(fs_homepath->string, fs_gamedir, fileName);
+	if (!ospath || !ospath[0])
+	{
+		Com_Printf("FS_FOpenFileAppend: Failed to build OS path\n");
+		return 0;
+	}
 
 	if (fs_debug->integer)
 	{
@@ -1256,8 +1372,17 @@ fileHandle_t FS_FOpenFileAppend(const char *fileName)
 		return 0;
 	}
 
+	// Use C++23 compatible file opening
+#if __cplusplus >= 202300L
+	// Make sure the file mode is explicitly set for C++23 compatibility
+	FILE* file = fopen(ospath, "ab");
+	fsh[f].handleFiles.file.o = file;
+#else
+	// Traditional file opening for older C++ standards
 	fsh[f].handleFiles.file.o = Sys_FOpen(ospath, "ab");
-	fsh[f].handleSync         = qfalse;
+#endif
+
+	fsh[f].handleSync = qfalse;
 	if (!fsh[f].handleFiles.file.o)
 	{
 		f = 0;

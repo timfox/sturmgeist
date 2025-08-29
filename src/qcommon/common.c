@@ -122,6 +122,7 @@ cvar_t *com_timedemo;
 cvar_t *com_sv_running;
 cvar_t *com_cl_running;
 cvar_t *com_logfile;        // 1 = buffer log, 2 = flush after each print
+cvar_t *com_logfilename;    // custom log filename
 cvar_t *com_showtrace;
 cvar_t *com_version;
 cvar_t *com_buildScript;    // for automated data building scripts
@@ -297,10 +298,18 @@ void QDECL Com_Printf(const char *fmt, ...)
 			time_t aclock;
 			char   timeFt[32];
 
+			const char *logfilename;
+			
 			opening_qconsole = qtrue;
-
-			logfile = FS_FOpenFileWrite("etconsole.log");
-
+			
+			// Use the custom logfilename if specified
+			logfilename = "etconsole.log";
+			if (com_logfilename && com_logfilename->string[0]) {
+				logfilename = com_logfilename->string;
+			}
+			
+			logfile = FS_FOpenFileWrite(logfilename);
+			
 			if (logfile)
 			{
 				time(&aclock);
@@ -1701,11 +1710,38 @@ void Com_TouchMemory(void)
 void Com_InitSmallZoneMemory(void)
 {
 	s_smallZoneTotal = 512 * 1024;
-	smallzone        = calloc(s_smallZoneTotal, 1);
+	
+	// Use properly aligned memory allocation for C++23 compatibility
+#if __cplusplus >= 202300L
+	// C++23 requires proper alignment for memory allocations
+	size_t alignment = 16; // Use 16-byte alignment for modern CPUs
+	
+	// Calculate the total size needed including alignment padding
+	size_t totalSize = s_smallZoneTotal + alignment;
+	
+	// Allocate memory
+	void* rawMemory = malloc(totalSize);
+	if (!rawMemory)
+	{
+		Com_Error(ERR_FATAL, "Small zone data failed to allocate %1.1f megs", (double)s_smallZoneTotal / (1024 * 1024));
+	}
+	
+	// Align the memory
+	uintptr_t address = (uintptr_t)rawMemory;
+	uintptr_t alignedAddress = (address + alignment - 1) & ~(alignment - 1);
+	smallzone = (void*)alignedAddress;
+	
+	// Clear the memory
+	memset(smallzone, 0, s_smallZoneTotal);
+#else
+	// Traditional allocation for older C++ standards
+	smallzone = calloc(s_smallZoneTotal, 1);
 	if (!smallzone)
 	{
 		Com_Error(ERR_FATAL, "Small zone data failed to allocate %1.1f megs", (double)s_smallZoneTotal / (1024 * 1024));
 	}
+#endif
+
 	Z_ClearZone(smallzone, s_smallZoneTotal);
 }
 
@@ -1736,11 +1772,37 @@ void Com_InitZoneMemory(void)
 		s_zoneTotal = 1024 * 1024 * cv->integer;
 	}
 
+	// Use properly aligned memory allocation for C++23 compatibility
+#if __cplusplus >= 202300L
+	// C++23 requires proper alignment for memory allocations
+	size_t alignment = 16; // Use 16-byte alignment for modern CPUs
+	
+	// Calculate the total size needed including alignment padding
+	size_t totalSize = s_zoneTotal + alignment;
+	
+	// Allocate memory
+	void* rawMemory = malloc(totalSize);
+	if (!rawMemory)
+	{
+		Com_Error(ERR_FATAL, "Zone data failed to allocate %i megs", s_zoneTotal / (1024 * 1024));
+	}
+	
+	// Align the memory
+	uintptr_t address = (uintptr_t)rawMemory;
+	uintptr_t alignedAddress = (address + alignment - 1) & ~(alignment - 1);
+	mainzone = (void*)alignedAddress;
+	
+	// Clear the memory
+	memset(mainzone, 0, s_zoneTotal);
+#else
+	// Traditional allocation for older C++ standards
 	mainzone = calloc(s_zoneTotal, 1);
 	if (!mainzone)
 	{
 		Com_Error(ERR_FATAL, "Zone data failed to allocate %i megs", s_zoneTotal / (1024 * 1024));
 	}
+#endif
+
 	Z_ClearZone(mainzone, s_zoneTotal);
 }
 
@@ -2844,6 +2906,10 @@ void Com_Init(char *commandLine)
 
 	// init crashed variable as early as possible
 	com_crashed = Cvar_Get("com_crashed", "0", CVAR_TEMP);
+	
+	// init logfile variables
+	com_logfile = Cvar_Get("logfile", "0", CVAR_TEMP);
+	com_logfilename = Cvar_Get("logfilename", "etconsole.log", CVAR_ARCHIVE);
 
 	// init process id
 	com_pid = Cvar_Get("com_pid", va("%d", Sys_PID()), CVAR_ROM);

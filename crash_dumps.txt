@@ -1,0 +1,15 @@
+Crash dump search results 
+Timestamp: Fri 08/29/2025 10:07:04.48 
+ 
+C:\Users\TIMFOX~1\AppData\Local\Temp\MayaCrashLog250810.2217.dmp
+C:\Users\TIMFOX~1\AppData\Local\Temp\MayaCrashLog250824.1248.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\Creative Cloud.exe.14800.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\ffmpeg.exe.20312.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\ffplay.exe.15904.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\GameBar.exe.13548.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\inno_updater.exe.8488.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\inno_updater.exe.8636.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\maya.exe.14076.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\maya.exe.15584.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\maya.exe.18720.dmp
+C:\Users\Tim Fox\AppData\Local\CrashDumps\python.exe.19008.dmp

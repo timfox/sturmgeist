@@ -1,0 +1,4 @@
+Starting enhanced debug logging for etl.exe 
+Current directory: Z:\sturmgeist 
+Timestamp: Fri 08/29/2025 10:03:21.79 
+ERROR: etl.exe not found in current directory! 
