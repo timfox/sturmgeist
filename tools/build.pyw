@@ -3,6 +3,7 @@ import subprocess
 import os
 import shutil
 import stat
+import glob
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QHBoxLayout, QMessageBox, QComboBox, QCheckBox
 )
@@ -20,9 +21,11 @@ def get_preferred_encoding():
 class CMakeBuildThread(QThread):
     output_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
+    exe_paths_signal = pyqtSignal(list)  # New: emit exe paths after build
 
     def __init__(self, source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui,
-                 build_client_mod=False, build_server_mod=False, build_mod_pk3=False, copy_mod_outputs=True):
+                 build_client_mod=False, build_server_mod=False, build_mod_pk3=False, copy_mod_outputs=True,
+                 platform_target="Windows", dist_dir=None):
         super().__init__()
         self.source_dir = source_dir
         self.build_dir = build_dir
@@ -35,6 +38,8 @@ class CMakeBuildThread(QThread):
         self.build_server_mod = build_server_mod
         self.build_mod_pk3 = build_mod_pk3
         self.copy_mod_outputs = copy_mod_outputs
+        self.platform_target = platform_target
+        self.dist_dir = dist_dir
 
     def run(self):
         try:
@@ -93,17 +98,35 @@ class CMakeBuildThread(QThread):
                 f"-DCMAKE_BUILD_TYPE={self.build_type}"
             ]
 
-            # Generator / compiler selection
-            if sys.platform.startswith("win") and self.compiler_type.startswith("MSVC"):
-                cmake_cmd.extend(["-G", "Visual Studio 17 2022"])
-                vs_arch = "x64" if self.architecture == "x64" else "Win32"
-                cmake_cmd.extend(["-A", vs_arch])
-            else:
-                # Default to Ninja for GCC/Clang
+            # Platform selection (from README.md, typical platforms: Windows, Linux, macOS, Emscripten)
+            # This is a simple mapping, you may want to adjust for your actual CMake setup
+            if self.platform_target == "Windows":
+                if sys.platform.startswith("win") and self.compiler_type.startswith("MSVC"):
+                    cmake_cmd.extend(["-G", "Visual Studio 17 2022"])
+                    vs_arch = "x64" if self.architecture == "x64" else "Win32"
+                    cmake_cmd.extend(["-A", vs_arch])
+                else:
+                    cmake_cmd.extend(["-G", "Ninja"])
+                    if self.compiler_type.startswith("Clang"):
+                        cmake_cmd.extend(["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"])
+            elif self.platform_target == "Linux":
                 cmake_cmd.extend(["-G", "Ninja"])
                 if self.compiler_type.startswith("Clang"):
                     cmake_cmd.extend(["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"])
-            
+                elif self.compiler_type.startswith("GCC"):
+                    cmake_cmd.extend(["-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++"])
+            elif self.platform_target == "macOS":
+                cmake_cmd.extend(["-G", "Ninja"])
+                cmake_cmd.extend(["-DCMAKE_SYSTEM_NAME=Darwin"])
+                if self.compiler_type.startswith("Clang"):
+                    cmake_cmd.extend(["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"])
+            elif self.platform_target == "Emscripten":
+                cmake_cmd.extend(["-G", "Ninja"])
+                cmake_cmd.extend(["-DCMAKE_TOOLCHAIN_FILE=" + os.path.join(self.source_dir, "cmake", "Platform", "Emscripten.cmake")])
+            else:
+                # Default fallback
+                cmake_cmd.extend(["-G", "Ninja"])
+
             # Add architecture flag
             if self.architecture == "x86":
                 cmake_cmd.append("-DCROSS_COMPILE32=ON")
@@ -245,7 +268,7 @@ class CMakeBuildThread(QThread):
             if self.copy_mod_outputs and (self.build_client_mod or self.build_server_mod or self.build_mod_pk3):
                 try:
                     mod_build_dir = os.path.join(self.build_dir, "legacy")
-                    mod_dist_dir = os.path.join(self.source_dir, "dist", "legacy")
+                    mod_dist_dir = os.path.join(self.dist_dir if self.dist_dir else self.source_dir, "legacy")
                     if os.path.isdir(mod_build_dir):
                         os.makedirs(mod_dist_dir, exist_ok=True)
                         copied = 0
@@ -260,7 +283,55 @@ class CMakeBuildThread(QThread):
                 except Exception as e:
                     self.output_signal.emit(f"Warning: failed to copy mod outputs: {e}\n")
 
+            # --- New: Move final exe files to dist directory and emit their paths ---
+            exe_paths = []
+            try:
+                # Find .exe files in build_dir and subdirs (Release/Debug/RelWithDebInfo/MinSizeRel)
+                exe_candidates = []
+                for root, dirs, files in os.walk(self.build_dir):
+                    for file in files:
+                        if file.lower().endswith(".exe"):
+                            exe_candidates.append(os.path.join(root, file))
+                if exe_candidates:
+                    dist_dir = self.dist_dir if self.dist_dir else os.path.join(self.source_dir, "dist")
+                    os.makedirs(dist_dir, exist_ok=True)
+                    for exe in exe_candidates:
+                        exe_name = os.path.basename(exe)
+                        dst = os.path.join(dist_dir, exe_name)
+                        shutil.copy2(exe, dst)
+                        exe_paths.append(dst)
+                        self.output_signal.emit(f"Moved {exe_name} to {dist_dir}\n")
+                else:
+                    self.output_signal.emit("No .exe files found to move to dist directory.\n")
+            except Exception as e:
+                self.output_signal.emit(f"Warning: failed to move exe files to dist: {e}\n")
+
+            # --- New: Copy cimgui.dll to dist if ImGui is enabled and cimgui.dll is found ---
+            if self.enable_imgui:
+                try:
+                    # Search for cimgui.dll in build_dir and subdirs
+                    cimgui_found = False
+                    for root, dirs, files in os.walk(self.build_dir):
+                        for file in files:
+                            if file.lower() == "cimgui.dll":
+                                src = os.path.join(root, file)
+                                dist_dir = self.dist_dir if self.dist_dir else os.path.join(self.source_dir, "dist")
+                                os.makedirs(dist_dir, exist_ok=True)
+                                dst = os.path.join(dist_dir, file)
+                                shutil.copy2(src, dst)
+                                self.output_signal.emit(f"Copied cimgui.dll to {dist_dir}\n")
+                                cimgui_found = True
+                                break
+                        if cimgui_found:
+                            break
+                    if not cimgui_found:
+                        self.output_signal.emit("Warning: cimgui.dll not found in build output. Executable may not run.\n")
+                except Exception as e:
+                    self.output_signal.emit(f"Warning: failed to copy cimgui.dll: {e}\n")
+
             self.output_signal.emit("\nBuild finished successfully.\n")
+            # Emit exe paths for GUI to enable launch button
+            self.exe_paths_signal.emit(exe_paths)
             self.finished_signal.emit(True)
         except Exception as e:
             self.output_signal.emit(f"Error: {e}\n")
@@ -270,9 +341,10 @@ class CMakeBuilderGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Wolf Enemy Territory Engine Builder")
-        self.setMinimumSize(700, 600)
+        self.setMinimumSize(700, 650)
         # Set Univers as the regular font for the whole application
         self.setFont(QFont("Univers"))
+        self.exe_paths = []  # Store exe paths for launch
         self.init_ui()
 
     def init_ui(self):
@@ -330,6 +402,30 @@ class CMakeBuilderGUI(QWidget):
         build_layout.addWidget(self.build_path)
         build_layout.addWidget(self.build_browse)
         layout.addLayout(build_layout)
+
+        # Platform selection (new)
+        platform_layout = QHBoxLayout()
+        self.platform_label = QLabel("Platform:")
+        self.platform_combo = QComboBox()
+        # These should match the supported platforms in README.md
+        self.platform_combo.addItems(["Windows", "Linux", "macOS", "Emscripten"])
+        self.platform_combo.setCurrentText("Windows")
+        platform_layout.addWidget(self.platform_label)
+        platform_layout.addWidget(self.platform_combo)
+        layout.addLayout(platform_layout)
+
+        # Distribution directory selection (new)
+        dist_layout = QHBoxLayout()
+        self.dist_label = QLabel("Distribution Directory:")
+        default_dist = os.path.join(os.getcwd(), "dist")
+        self.dist_path = QTextEdit(default_dist)
+        self.dist_path.setMaximumHeight(30)
+        self.dist_browse = QPushButton("Browse")
+        self.dist_browse.clicked.connect(self.browse_dist)
+        dist_layout.addWidget(self.dist_label)
+        dist_layout.addWidget(self.dist_path)
+        dist_layout.addWidget(self.dist_browse)
+        layout.addLayout(dist_layout)
 
         # Build type selection
         type_layout = QHBoxLayout()
@@ -389,7 +485,11 @@ class CMakeBuilderGUI(QWidget):
         self.build_button.clicked.connect(self.start_build)
         self.save_log_button = QPushButton("Save Log")
         self.save_log_button.clicked.connect(self.save_log)
+        self.launch_exe_button = QPushButton("Launch Executable(s)")
+        self.launch_exe_button.setEnabled(False)
+        self.launch_exe_button.clicked.connect(self.launch_exe)
         actions_layout.addWidget(self.build_button)
+        actions_layout.addWidget(self.launch_exe_button)
         actions_layout.addStretch(1)
         actions_layout.addWidget(self.save_log_button)
         layout.addLayout(actions_layout)
@@ -415,6 +515,11 @@ class CMakeBuilderGUI(QWidget):
         if dir:
             self.build_path.setText(dir)
 
+    def browse_dist(self):
+        dir = QFileDialog.getExistingDirectory(self, "Select Distribution Directory", self.dist_path.toPlainText())
+        if dir:
+            self.dist_path.setText(dir)
+
     def start_build(self):
         source_dir = self.src_path.toPlainText().strip()
         build_dir = self.build_path.toPlainText().strip()
@@ -427,6 +532,8 @@ class CMakeBuilderGUI(QWidget):
         build_server_mod = self.build_server_mod_checkbox.isChecked()
         build_mod_pk3 = self.build_mod_pk3_checkbox.isChecked()
         copy_mod_outputs = self.copy_mod_outputs_checkbox.isChecked()
+        platform_target = self.platform_combo.currentText()
+        dist_dir = self.dist_path.toPlainText().strip()
 
         if not os.path.isfile(os.path.join(source_dir, "CMakeLists.txt")):
             QMessageBox.critical(self, "Error", "CMakeLists.txt not found in source directory.")
@@ -434,10 +541,16 @@ class CMakeBuilderGUI(QWidget):
 
         self.output_log.clear()
         self.build_button.setEnabled(False)
-        self.build_thread = CMakeBuildThread(source_dir, build_dir, build_type, architecture, compiler_type, clean_build,
-                                            enable_imgui, build_client_mod, build_server_mod, build_mod_pk3, copy_mod_outputs)
+        self.launch_exe_button.setEnabled(False)
+        self.exe_paths = []
+        self.build_thread = CMakeBuildThread(
+            source_dir, build_dir, build_type, architecture, compiler_type, clean_build,
+            enable_imgui, build_client_mod, build_server_mod, build_mod_pk3, copy_mod_outputs,
+            platform_target, dist_dir
+        )
         self.build_thread.output_signal.connect(self.append_output)
         self.build_thread.finished_signal.connect(self.build_finished)
+        self.build_thread.exe_paths_signal.connect(self.set_exe_paths)
         self.build_thread.start()
 
     def append_output(self, text):
@@ -446,10 +559,48 @@ class CMakeBuilderGUI(QWidget):
 
     def build_finished(self, success):
         self.build_button.setEnabled(True)
+        if self.exe_paths:
+            self.launch_exe_button.setEnabled(True)
+        else:
+            self.launch_exe_button.setEnabled(False)
         if success:
             QMessageBox.information(self, "Build", "Build finished successfully.")
         else:
             QMessageBox.critical(self, "Build", "Build failed. See output for details.")
+
+    def set_exe_paths(self, exe_paths):
+        self.exe_paths = exe_paths
+        if exe_paths:
+            self.launch_exe_button.setEnabled(True)
+        else:
+            self.launch_exe_button.setEnabled(False)
+
+    def launch_exe(self):
+        if not self.exe_paths:
+            QMessageBox.warning(self, "No Executable", "No executable found to launch.")
+            return
+        # If multiple exes, let user pick one
+        if len(self.exe_paths) == 1:
+            exe_to_launch = self.exe_paths[0]
+        else:
+            # Let user pick which exe to launch
+            from PyQt6.QtWidgets import QInputDialog
+            exe_names = [os.path.basename(p) for p in self.exe_paths]
+            idx, ok = QInputDialog.getItem(self, "Select Executable", "Choose executable to launch:", exe_names, 0, False)
+            if not ok:
+                return
+            exe_to_launch = self.exe_paths[exe_names.index(idx)]
+        # Launch exe in its dist directory, with cimgui.dll present if needed
+        exe_dir = os.path.dirname(exe_to_launch)
+        # On Windows, use startfile or subprocess
+        try:
+            if sys.platform.startswith("win"):
+                # Use subprocess with cwd=exe_dir so cimgui.dll is found
+                subprocess.Popen([exe_to_launch], cwd=exe_dir)
+            else:
+                subprocess.Popen([exe_to_launch], cwd=exe_dir)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to launch executable:\n{e}")
 
     def save_log(self):
         path, _ = QFileDialog.getSaveFileName(self, "Save Build Log", os.path.join(os.getcwd(), "build.log"), "Text Files (*.txt);;All Files (*)")
