@@ -4,8 +4,9 @@ import os
 import shutil
 import stat
 import glob
+import re
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QHBoxLayout, QMessageBox, QComboBox, QCheckBox
+    QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QHBoxLayout, QMessageBox, QComboBox, QCheckBox, QProgressBar
 )
 from PyQt6.QtGui import QFont, QFontDatabase
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
@@ -22,6 +23,7 @@ class CMakeBuildThread(QThread):
     output_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
     exe_paths_signal = pyqtSignal(list)  # New: emit exe paths after build
+    progress_signal = pyqtSignal(int)    # New: emit progress percentage
 
     def __init__(self, source_dir, build_dir, build_type, architecture, compiler_type, clean_build, enable_imgui,
                  build_client_mod=False, build_server_mod=False, build_mod_pk3=False, copy_mod_outputs=True,
@@ -40,6 +42,20 @@ class CMakeBuildThread(QThread):
         self.copy_mod_outputs = copy_mod_outputs
         self.platform_target = platform_target
         self.dist_dir = dist_dir
+
+    def parse_progress(self, line):
+        # Look for patterns like "123/522" or "[123/522]" or "Building CXX object ... (123/522)"
+        match = re.search(r'(\[)?(\d+)\s*/\s*(\d+)(\])?', line)
+        if match:
+            try:
+                current = int(match.group(2))
+                total = int(match.group(3))
+                if total > 0:
+                    percent = int((current / total) * 100)
+                    return percent
+            except Exception:
+                pass
+        return None
 
     def run(self):
         try:
@@ -209,13 +225,22 @@ class CMakeBuildThread(QThread):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT
                 )
+            last_progress = -1
             for raw_line in proc.stdout:
                 if isinstance(raw_line, bytes):
                     line = raw_line.decode(encoding, errors="replace")
                 else:
                     line = raw_line
                 self.output_signal.emit(line)
+                # Progress bar update
+                percent = self.parse_progress(line)
+                if percent is not None and percent != last_progress:
+                    self.progress_signal.emit(percent)
+                    last_progress = percent
+            # If we never saw 100%, force it at the end if build succeeded
             proc.wait()
+            if proc.returncode == 0 and last_progress < 100:
+                self.progress_signal.emit(100)
             if proc.returncode != 0:
                 self.output_signal.emit("Build failed.\n")
                 self.finished_signal.emit(False)
@@ -252,13 +277,20 @@ class CMakeBuildThread(QThread):
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT
                     )
+                last_progress = -1
                 for raw_line in proc.stdout:
                     if isinstance(raw_line, bytes):
                         line = raw_line.decode(encoding, errors="replace")
                     else:
                         line = raw_line
                     self.output_signal.emit(line)
+                    percent = self.parse_progress(line)
+                    if percent is not None and percent != last_progress:
+                        self.progress_signal.emit(percent)
+                        last_progress = percent
                 proc.wait()
+                if proc.returncode == 0 and last_progress < 100:
+                    self.progress_signal.emit(100)
                 if proc.returncode != 0:
                     self.output_signal.emit("Gamecode build failed.\n")
                     self.finished_signal.emit(False)
@@ -330,6 +362,7 @@ class CMakeBuildThread(QThread):
                     self.output_signal.emit(f"Warning: failed to copy cimgui.dll: {e}\n")
 
             self.output_signal.emit("\nBuild finished successfully.\n")
+            self.progress_signal.emit(100)  # Ensure progress bar is full at the end
             # Emit exe paths for GUI to enable launch button
             self.exe_paths_signal.emit(exe_paths)
             self.finished_signal.emit(True)
@@ -494,6 +527,14 @@ class CMakeBuilderGUI(QWidget):
         actions_layout.addWidget(self.save_log_button)
         layout.addLayout(actions_layout)
 
+        # Progress bar (NEW)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        layout.addWidget(self.progress_bar)
+
         # Output log
         self.output_log = QTextEdit()
         self.output_log.setReadOnly(True)
@@ -540,6 +581,7 @@ class CMakeBuilderGUI(QWidget):
             return
 
         self.output_log.clear()
+        self.progress_bar.setValue(0)
         self.build_button.setEnabled(False)
         self.launch_exe_button.setEnabled(False)
         self.exe_paths = []
@@ -551,11 +593,15 @@ class CMakeBuilderGUI(QWidget):
         self.build_thread.output_signal.connect(self.append_output)
         self.build_thread.finished_signal.connect(self.build_finished)
         self.build_thread.exe_paths_signal.connect(self.set_exe_paths)
+        self.build_thread.progress_signal.connect(self.update_progress)
         self.build_thread.start()
 
     def append_output(self, text):
         self.output_log.append(text)
         self.output_log.verticalScrollBar().setValue(self.output_log.verticalScrollBar().maximum())
+
+    def update_progress(self, percent):
+        self.progress_bar.setValue(percent)
 
     def build_finished(self, success):
         self.build_button.setEnabled(True)
@@ -564,6 +610,7 @@ class CMakeBuilderGUI(QWidget):
         else:
             self.launch_exe_button.setEnabled(False)
         if success:
+            self.progress_bar.setValue(100)
             QMessageBox.information(self, "Build", "Build finished successfully.")
         else:
             QMessageBox.critical(self, "Build", "Build failed. See output for details.")
@@ -627,6 +674,8 @@ class CMakeBuilderGUI(QWidget):
             QCheckBox::indicator { width: 18px; height: 18px; border-radius: 3px; background: #1a0f0f; border: 1px solid #7a0000; }
             QCheckBox::indicator:checked { background: #7a0000; border: 1px solid #b30000; }
             QCheckBox::indicator:unchecked { background: #121212; border: 1px solid #7a0000; }
+            QProgressBar { background-color: #2a1414; color: #e8e0d5; border: 1px solid #7a0000; border-radius: 4px; text-align: center; }
+            QProgressBar::chunk { background-color: #7a0000; }
             """
         )
 

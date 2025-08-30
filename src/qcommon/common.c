@@ -288,6 +288,19 @@ void QDECL Com_Printf(const char *fmt, ...)
 	// echo to dedicated console and early console
 	Sys_Print(msg);
 
+	// Always try to write to a debug log file regardless of other settings
+	// This is a temporary debug measure to diagnose startup issues
+#if __cplusplus >= 202300L
+	{
+		// Direct file write for C++23 debugging
+		FILE* debugLog = fopen("etl_direct_debug.log", "a");
+		if (debugLog) {
+			fprintf(debugLog, "%s", msg);
+			fclose(debugLog);
+		}
+	}
+#endif
+
 	// logfile
 	if (com_logfile && com_logfile->integer)
 	{
@@ -2868,6 +2881,17 @@ void Com_Init(char *commandLine)
 	volatile qboolean safeMode = qtrue;
 	int               qport;
 	qboolean          test;
+	
+	// Direct debug logging for C++23 startup issues
+#if __cplusplus >= 202300L
+	{
+		FILE* debugLog = fopen("etl_startup_debug.log", "w");
+		if (debugLog) {
+			fprintf(debugLog, "Com_Init started\n");
+			fclose(debugLog);
+		}
+	}
+#endif
 
 	Com_Printf(S_COLOR_GREEN ET_VERSION "\n");
 
@@ -2907,6 +2931,17 @@ void Com_Init(char *commandLine)
 	// init crashed variable as early as possible
 	com_crashed = Cvar_Get("com_crashed", "0", CVAR_TEMP);
 	
+	// Direct debug logging for C++23 startup issues
+#if __cplusplus >= 202300L
+	{
+		FILE* debugLog = fopen("etl_startup_debug.log", "a");
+		if (debugLog) {
+			fprintf(debugLog, "Initializing logfile variables\n");
+			fclose(debugLog);
+		}
+	}
+#endif
+
 	// init logfile variables
 	com_logfile = Cvar_Get("logfile", "0", CVAR_TEMP);
 	com_logfilename = Cvar_Get("logfilename", "etconsole.log", CVAR_ARCHIVE);
@@ -2917,7 +2952,29 @@ void Com_Init(char *commandLine)
 	// done early so bind command exists
 	CL_InitKeyCommands();
 
+	// Direct debug logging for C++23 startup issues
+#if __cplusplus >= 202300L
+	{
+		FILE* debugLog = fopen("etl_startup_debug.log", "a");
+		if (debugLog) {
+			fprintf(debugLog, "About to initialize filesystem\n");
+			fclose(debugLog);
+		}
+	}
+#endif
+
 	FS_InitFilesystem();
+
+	// Direct debug logging for C++23 startup issues
+#if __cplusplus >= 202300L
+	{
+		FILE* debugLog = fopen("etl_startup_debug.log", "a");
+		if (debugLog) {
+			fprintf(debugLog, "Filesystem initialization completed\n");
+			fclose(debugLog);
+		}
+	}
+#endif
 
 	Com_InitJournaling();
 
