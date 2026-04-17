@@ -35,7 +35,7 @@ Docker base images).
 | P1 | zlib (`libs/zlib`) | 1.3.1 | 1.3.1 (no action) | Only known 1.3.1 CVE (CVE-2026-22184) is in `contrib/untgz`, which we do not build or ship. No fix needed. |
 | P1 | GLEW (`libs/glew`) | 2.1.0 | 2.2.0 | No CVEs, but 2.2.0 is current and adds OpenGL 4.6 ext tables. |
 | P1 (Android) | Gradle wrapper | 8.13 | 8.13 | Matches AGP 8.13 requirement; keep. |
-| P1 (Android) | AGP (`build.gradle`, `app/libs/joystick/build.gradle`) | root 8.13.0 / joystick submodule **8.2.2** | align both on 8.13.0 | The joystick submodule uses an outdated AGP that no longer matches its parent Gradle. Left unaligned it may block local sub-module builds. |
+| P1 (Android) | AGP (`build.gradle`, `app/libs/joystick/build.gradle`) | **8.13.0** (both) | keep | JoyStick is vendored under `app/libs/joystick/` (no longer a submodule) and uses the same AGP/Gradle major as the root project. |
 | P2 | Android `compileSdk` 36 / `targetSdk` 36 | 36 | 36 | AGP 8.13 supports API 36; no change. |
 | P2 | `androidx.appcompat` | 1.7.1 | 1.7.1 | current |
 | P2 | `androidx.recyclerview` | 1.4.0 | 1.4.0 | current |
@@ -71,7 +71,7 @@ All P0 items listed below are "high-confidence" by that rule.
 
 - SDL2 2.30.9 → SDL3: SDL3 renames `SDL_main.h`, removes `SDL_CreateRGBSurface`, and breaks `SDL_WINDOW_*` flags we rely on. **Do not bundle SDL3 yet.** Keep 2.30.9 (current, receives bugfixes via sdl2-compat downstream).
 - OpenSSL 3.2 → 3.4: 3.4 removes legacy ENGINE plumbing and low-level `EVP_*_meth_*` symbols; curl builds fine, but our `./Configure` recipe and the Windows NMake build step need retesting on all 5 CI hosts. Stay on 3.2.6 for the patch train.
-- AGP 8.2.2 → 8.13 inside `app/libs/joystick`: the submodule is a separate repository. The fix is in that repo; this repo tracks a commit, so we just bump the submodule.
+- ~~AGP 8.2.2 → 8.13 inside `app/libs/joystick`~~ **Done in-tree**: JoyStick sources live under `app/libs/joystick/` and track the root AGP line.
 
 ---
 
@@ -96,7 +96,7 @@ All P0 items listed below are "high-confidence" by that rule.
 | libtheora 1.1.1 in tree | `libs/theora/configure.ac` → `AC_INIT(libtheora,[1.1.1])`. |
 | OpenAL-Soft 1.19.1 in tree | `libs/openal/CMakeLists.txt` → `LIB_MAJOR_VERSION "1" / LIB_MINOR_VERSION "19" / LIB_REVISION "1"`. |
 | findlocale 0.46 in tree | `libs/findlocale/VERSION` → `v0.46 -- 2005-04-06`. |
-| AGP 8.13.0 / joystick AGP 8.2.2 | `build.gradle` line 9 and `app/libs/joystick/build.gradle` line 9. |
+| AGP 8.13.0 (root and vendored JoyStick) | `build.gradle` line 9 and `app/libs/joystick/build.gradle` line 9. |
 | Gradle wrapper 8.13 | `gradle/wrapper/gradle-wrapper.properties` → `gradle-8.13-bin.zip`. |
 | Android deps | `app/build.gradle` lines 160–171. |
 | CI actions | `.github/workflows/*.yml` — all `uses:` lines inventoried above. |
@@ -215,7 +215,7 @@ No patches, no build-system refactors, no API code touched.
 8. **SQLite 3.36.0 → 3.46.x** — overlay `libs/sqlite3/src/{sqlite3.c,sqlite3.h,sqlite3ext.h,shell.c}`.
 9. **GLEW 2.1.0 → 2.2.0** — overlay `libs/glew`.
 10. **OpenAL-Soft 1.19.1 → 1.23.1** — overlay `libs/openal`.
-11. **Gradle: realign AGP in submodule** — `git submodule update --remote app/libs/joystick` pinning a joystick commit that uses AGP ≥ 8.13.
+11. **Gradle: JoyStick AGP** — sources are vendored in `app/libs/joystick/`; keep its `classpath 'com.android.tools.build:gradle:…'` aligned with the root `build.gradle` when upgrading AGP.
 12. **Kotlin BOM 1.8.0 → 2.0.21** in `app/build.gradle`.
 13. **Replace `com.android.support.test:runner:1.0.2` with `androidx.test:runner:1.6.2`** (or drop the instrumented test stanza entirely if unused).
 
