@@ -9,9 +9,9 @@ set -Eeuo pipefail
 # current Git branch
 branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 
-# Require master
-if [[ "$branch" != "master" ]]; then
-	echo "Not in master exiting"
+# Require default integration branch (main or master)
+if [[ "$branch" != "main" && "$branch" != "master" ]]; then
+	echo "Not on main or master; exiting"
 	exit 1
 fi
 
@@ -116,11 +116,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	read -p "Push commit and tag to remote? [Y/N]: " -n 1 -r
 	echo
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		git push origin master
+		git push origin "$branch"
 		git push origin "v$major.$minor.$patch"
 		echo "Pushed data to remote. Congrats!"
 	else
-		echo "You need to 'git push origin master' and 'git push origin --tags' manually."
+		echo "You need to 'git push origin $branch' and 'git push origin --tags' manually."
 	fi
 else
   echo "Chicken!"
