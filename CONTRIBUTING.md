@@ -40,6 +40,18 @@ If you are interested to participate, ensure to read first our contribution guid
 * [How to commit your code](https://github.com/etlegacy/etlegacy/wiki/How-to-commit-Your-Code)
 * [Coding conventions](https://github.com/etlegacy/etlegacy/wiki/Coding-Conventions)
 
+## UPSTREAM AND FORKS
+
+To pull the latest changes from the main ET: Legacy repository without merging yet:
+
+```sh
+pixi run upstream-fetch
+# then: git log --oneline HEAD..FETCH_HEAD
+# merge or rebase when ready: git merge FETCH_HEAD   # or your preferred workflow
+```
+
+Formatting and workflow checks used in CI can be run locally with `pixi install` and `pixi run -e validation check-changes`. The default comparison branch is read from `.upstream-remote-branch` when that file exists (for example `origin/main` on forks that use `main` as the default branch).
+
 ## COMMUNICATION
 
 Communication happens online at:

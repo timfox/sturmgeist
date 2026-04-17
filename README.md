@@ -116,9 +116,19 @@ $ git submodule update
 
 This downloads the essential dependencies into the `libs/`directory. You can choose
 whether to use bundled libraries instead of the system ones by changing the
-`BUNDLED_LIBS` variable in the CMakeList.txt configuration file. You can then select
+`BUNDLED_LIBS` variable in the CMakeLists.txt configuration file. You can then select
 which bundled libraries to use by toggling the respective `BUNDLED_XXX` variable.
 
+## Development helpers
+
+The repo ships a [Pixi](https://pixi.sh/) workspace (`pixi.toml`) so you can run the same helpers CI uses without hunting for matching tool versions:
+
+* `pixi install` then `pixi run -e validation check-changes` — formatting and workflow checks for changed files (default merge base is `origin/main` when `.upstream-remote-branch` is present, otherwise `origin/master`).
+* `pixi run -e validation autoformat` — apply configured formatters.
+* `pixi run -e validation lint-workflows` — [actionlint](https://github.com/rhysd/actionlint) on `.github/workflows`.
+* `pixi run upstream-fetch` — `git fetch` upstream ET: Legacy `master` into `FETCH_HEAD` only (no merge). Override with `ETL_UPSTREAM` and `ETL_UPSTREAM_BRANCH` if needed.
+
+For local builds, `./easybuild.sh help` lists commands and common flags.
 
 ## COMPILE AND INSTALL
 
@@ -189,7 +199,7 @@ Be sure to set the CMake variables (see above) beforehand.
 
   * In order to compile the jpeg-turbo library properly you will need the **nasm** assembler.
 
-  * On some systems, CMake might have trouble locating 32-bit libraries and tries to use 64-bit ones when building 32-bit. This can be fixed by setting the following enviromental variables before running CMake (note: running easybuild takes care of this for you)
+  * On some systems, CMake might have trouble locating 32-bit libraries and tries to use 64-bit ones when building 32-bit. This can be fixed by setting the following environment variables before running CMake (note: running easybuild takes care of this for you)
 
 ```sh
 $ export CC="gcc -m32"
