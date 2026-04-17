@@ -26,10 +26,16 @@ jobs:
           COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
           COVERITY_SCAN_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
         run: |
+          {
+            echo "## Coverity Scan"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$COVERITY_SCAN_TOKEN" ] && [ -n "$COVERITY_SCAN_EMAIL" ]; then
             echo "run_coverity=true" >> "$GITHUB_OUTPUT"
+            echo "Secrets \`COVERITY_SCAN_TOKEN\` and \`COVERITY_SCAN_EMAIL\` are set — the scan job will run." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "run_coverity=false" >> "$GITHUB_OUTPUT"
+            echo "Skipped: add repository secrets \`COVERITY_SCAN_TOKEN\` and \`COVERITY_SCAN_EMAIL\` (and optional variable \`COVERITY_PROJECT\`) to enable uploads to Coverity Scan." >> "$GITHUB_STEP_SUMMARY"
           fi
 
   latest:

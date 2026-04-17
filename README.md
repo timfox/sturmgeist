@@ -107,6 +107,9 @@ clone our repository hosted at [Github.com](https://github.com/etlegacy/etlegacy
 $ git clone git@github.com:etlegacy/etlegacy.git
 ```
 
+This repository (**Sturmgeist**) is a fork of ET: Legacy; clone with  
+`git clone git@github.com:timfox/sturmgeist.git` if you are contributing here. Sync from upstream with `pixi run upstream-fetch` (see [Development helpers](#development-helpers)) or your usual `git remote` workflow.
+
 If the required dependencies are not installed on your system run:
 
 ```sh
