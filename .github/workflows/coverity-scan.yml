@@ -2,9 +2,9 @@ name: "Coverity Scan"
 
 on:
   # push:
-  #   branches: [ master ]
+  #   branches: [ main, master ]
   # pull_request:
-  #   branches: [ master ]
+  #   branches: [ main, master ]
   workflow_dispatch:
   schedule:
     - cron: "0 0 * * FRI"
@@ -19,7 +19,10 @@ jobs:
           sudo apt-get install -y nasm libwayland-dev wayland-protocols libgl1-mesa-dev libglu1-mesa-dev libasound2-dev pulseaudio libpulse-dev libxext-dev
 
       - name: Checkout
-        run: git clone --recurse-submodules --jobs 8 --branch master --depth 1 https://github.com/etlegacy/etlegacy .
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
 
       - name: Configure
         run: >
