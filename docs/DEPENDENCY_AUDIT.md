@@ -6,11 +6,17 @@ in `libs/CMakeLists.txt`, Android/Gradle dependencies in `app/build.gradle` and
 `app/libs/joystick`, the Gradle wrapper, GitHub Actions, the Pixi toolchain, and
 Docker base images).
 
-No code is changed in this commit. It captures findings and a staged upgrade
-plan so the smallest safe patch can be prepared and reviewed first.
-
 > Reporting date: 2026-04-17. "Latest" reflects releases verified via
 > upstream changelogs / advisories on that date.
+
+## Status in this PR
+
+| Phase | Status |
+|---|---|
+| 1 — P0 bundled C/C++ security bumps (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **deferred — `libs/` is the `etlegacy/etlegacy-libs` submodule** and the actual source lives in another repo. Findings stay in this doc as the tracked plan. |
+| 2 — Android hygiene | **landed in this PR** (see commits): deprecated `com.android.support.test` removed; migrated to `androidx.test:runner 1.6.2` + `rules 1.6.1` + `junit 1.2.1`; `TestETL.java` and `AndroidManifest.xml` ported; `org.jetbrains.kotlin:kotlin-bom` 1.8.0 → 2.0.21. |
+| 3 — CI/Docker hygiene | **landed in this PR**: every third-party GitHub Action SHA-pinned (`addnab/docker-run-action`, `geekyeggo/delete-artifact`, `signpath/github-action-submit-signing-request`, `prefix-dev/setup-pixi`, `canonical/snapcraft-multiarch-action`, `snapcore/action-publish`, `Ilshidur/action-discord` bumped 0.3.0 → 0.3.2); `misc/docker/lnx-aarch64.Dockerfile` debian:11.8-slim → debian:12.13-slim; `misc/docker/dedicated.Dockerfile` now pins to a concrete 12.13 instead of floating `stable-slim`; `.github/dependabot.yml` added covering `github-actions`, `gradle`, and `docker`. |
+| 4 — Lua 5.4.3 → 5.4.7 and libtheora remediation | deferred (lives in `libs/` submodule). |
 
 ---
 
