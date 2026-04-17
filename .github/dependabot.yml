@@ -1,0 +1,64 @@
+# Dependabot configuration.
+#
+# Scope: only ecosystems this repository directly owns.
+#   - github-actions    : workflow `uses:` refs
+#   - gradle            : Android client/mod dependencies
+#   - docker            : Dockerfiles in misc/docker/
+#   - pip (pixi shadow) : pixi.toml dependencies are resolved via conda-forge
+#                         and are not tracked here; see SECURITY.md / docs/DEPENDENCY_AUDIT.md.
+#
+# The bundled C/C++ libraries under libs/ live in the etlegacy/etlegacy-libs
+# submodule and are version-bumped there, not in this repo.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  - package-ecosystem: "gradle"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      androidx-minor-and-patch:
+        patterns:
+          - "androidx.*"
+        update-types:
+          - "minor"
+          - "patch"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin:*"
+    labels:
+      - "dependencies"
+      - "android"
+
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "android"
+
+  - package-ecosystem: "docker"
+    directory: "/misc/docker"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"

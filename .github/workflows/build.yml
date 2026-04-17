@@ -67,7 +67,7 @@ jobs:
           CI_ETL_DESCRIBE: ${{needs.pre-build.outputs.describe}}
           CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
           CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
-        uses: maus007/docker-run-action-fork@v1
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: etlegacy/lnx-build:latest
           options: -v ${{ github.workspace }}:/code -e CI_ETL_DESCRIBE=${{needs.pre-build.outputs.describe}} -e CI_ETL_TAG=${{needs.pre-build.outputs.tag}} -e CI_ETL_UID=${{needs.pre-build.outputs.uid}} -e CI=true
@@ -104,7 +104,7 @@ jobs:
           CI_ETL_DESCRIBE: ${{needs.pre-build.outputs.describe}}
           CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
           CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
-        uses: maus007/docker-run-action-fork@v1
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: etlegacy/lnx-build:latest
           options: -v ${{ github.workspace }}:/code -e CI_ETL_DESCRIBE=${{needs.pre-build.outputs.describe}} -e CI_ETL_TAG=${{needs.pre-build.outputs.tag}} -e CI_ETL_UID=${{needs.pre-build.outputs.uid}} -e CI=true
@@ -373,7 +373,7 @@ jobs:
           zip -rvj -MM etlegacy-mod-${{needs.pre-build.outputs.describe}}.zip legacy_*.pk3 platforms/qagame* platforms/tvgame*
 
       - name: Remove old artifacts
-        uses: geekyeggo/delete-artifact@v4
+        uses: geekyeggo/delete-artifact@65041433121f7239077fa20be14c0690f70569de # v4
         with:
           failOnError: false
           name: |
@@ -414,7 +414,7 @@ jobs:
           submodules: true
 
       - name: Build
-        uses: maus007/docker-run-action-fork@v1
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: etlegacy/lnx-build:latest
           options: -v ${{ github.workspace }}:/code -e CI_ETL_DESCRIBE=${{needs.pre-build.outputs.describe}} -e CI_ETL_TAG=${{needs.pre-build.outputs.tag}} -e CI_ETL_UID=${{needs.pre-build.outputs.uid}} -e CI=true
@@ -438,7 +438,7 @@ jobs:
         working-directory: build/legacy
 
       - name: Generate packages
-        uses: maus007/docker-run-action-fork@v1
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: etlegacy/lnx-build:latest
           options: -v ${{ github.workspace }}:/code -e CI_ETL_DESCRIBE=${{needs.pre-build.outputs.describe}} -e CI_ETL_TAG=${{needs.pre-build.outputs.tag}} -e CI=true
@@ -463,7 +463,7 @@ jobs:
           submodules: true
 
       - name: Build
-        uses: maus007/docker-run-action-fork@v1
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: etlegacy/lnx-build:latest
           options: -v ${{ github.workspace }}:/code -e CI_ETL_DESCRIBE=${{needs.pre-build.outputs.describe}} -e CI_ETL_TAG=${{needs.pre-build.outputs.tag}} -e CI_ETL_UID=${{needs.pre-build.outputs.uid}} -e CI=true
@@ -487,7 +487,7 @@ jobs:
         working-directory: build/legacy
 
       - name: Generate packages
-        uses: maus007/docker-run-action-fork@v1
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: etlegacy/lnx-build:latest
           options: -v ${{ github.workspace }}:/code -e CI_ETL_DESCRIBE=${{needs.pre-build.outputs.describe}} -e CI_ETL_TAG=${{needs.pre-build.outputs.tag}} -e CI=true
@@ -826,7 +826,7 @@ jobs:
           pattern: win*
 
       - name: SignPath Win Snapshot
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         if: ${{ steps.vars.outputs.hash_exists == '404' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -838,7 +838,7 @@ jobs:
           output-artifact-directory: "win-packages"
 
       - name: SignPath Win64 Snapshot
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         if: ${{ steps.vars.outputs.hash_exists == '404' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -850,7 +850,7 @@ jobs:
           output-artifact-directory: "win64-packages"
 
       - name: SignPath Win Release
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         if: github.ref_type == 'tag'
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -862,7 +862,7 @@ jobs:
           output-artifact-directory: "win-packages"
 
       - name: SignPath Win64 Release
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         if: github.ref_type == 'tag'
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -907,7 +907,7 @@ jobs:
     needs: [pre-build, sign, lnx32, lnx64, osx, lnx-aarch64, android]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: geekyeggo/delete-artifact@v4
+      - uses: geekyeggo/delete-artifact@65041433121f7239077fa20be14c0690f70569de # v4
         with:
           name: |
             All-mods
@@ -945,7 +945,7 @@ jobs:
         if: ${{ steps.vars.outputs.hash_exists == '404' && needs.pre-build.outputs.describe != needs.pre-build.outputs.tag }}
         env:
           DISCORD_WEBHOOK: ${{ secrets.PUBLISH_DISCORD_WEBHOOK }}
-        uses: Ilshidur/action-discord@0.3.0
+        uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9 # 0.3.2
         with:
           args: "<@&673533235887865879> Build from ETLegacy: ${{ needs.pre-build.outputs.describe }} (${{ github.sha }}) has been published.\nDownload at: https://www.etlegacy.com/workflow-files"
 
@@ -1018,7 +1018,7 @@ jobs:
     if: always()
     needs: [upload, docker]
     steps:
-      - uses: geekyeggo/delete-artifact@v4
+      - uses: geekyeggo/delete-artifact@65041433121f7239077fa20be14c0690f70569de # v4
         with:
           failOnError: false
           name: |

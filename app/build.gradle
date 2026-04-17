@@ -70,7 +70,7 @@ android {
 			// libraries Gradle should build and package with your APK.
 			abiFilters 'arm64-v8a', 'x86_64', 'x86'
 		}
-		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+		testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 	}
 	signingConfigs {
 		debug {
@@ -164,11 +164,13 @@ dependencies {
 	implementation 'com.google.code.gson:gson:2.13.2'
 	implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
 	implementation 'androidx.recyclerview:recyclerview:1.4.0'
-	implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
+	implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.21"))
 
 	testImplementation 'junit:junit:4.13.2'
 	androidTestImplementation 'com.jayway.android.robotium:robotium-solo:5.6.3'
-	androidTestImplementation 'com.android.support.test:runner:1.0.2'
+	androidTestImplementation 'androidx.test:runner:1.6.2'
+	androidTestImplementation 'androidx.test:rules:1.6.1'
+	androidTestImplementation 'androidx.test.ext:junit:1.2.1'
 
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
 }
