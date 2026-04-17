@@ -1015,7 +1015,7 @@ print_help() {
     ehead "crust - run the uncrustify to the source"
     ehead "project - generate the project files for your platform"
     ehead "release - run the entire release process"
-    ehead "updatelicense - update the lisence years for the current year"
+    ehead "updatelicense - update the license years for the current year"
     ehead "watch - watch for source code changes and recompile & run tests"
     ehead "help - print this help"
     echo
@@ -1024,6 +1024,11 @@ print_help() {
     ehead "-noextra, -noupdate, -mod, -server, -ninja, -nopk3, -lsp"
     ehead "--build=*, --prefix=*, --osx=* --osx-arc=*"
     ehead "--silent -etpub -jaymod -nq"
+    echo
+    einfo "CI-style checks (install Pixi first: https://pixi.sh/)"
+    ehead "pixi run -e validation check-changes"
+    ehead "pixi run -e validation lint-workflows"
+    ehead "pixi run upstream-fetch   # fetch upstream master as FETCH_HEAD"
     echo
 }
 
