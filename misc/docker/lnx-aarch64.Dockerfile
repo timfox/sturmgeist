@@ -1,5 +1,5 @@
-FROM debian:11.8-slim
-LABEL version="1.0"
+FROM debian:12.13-slim
+LABEL version="1.1"
 LABEL maintainer="mail@etlegacy.com"
 LABEL description="Linux build machine for the arm64 (aarch64) linux releases"
 

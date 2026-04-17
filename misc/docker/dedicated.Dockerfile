@@ -1,5 +1,7 @@
 # Use the build stage to load up the tar and unpack it
-FROM debian:stable-slim AS builder
+# Pin to a concrete Debian 12 point release so published `etlegacy/server` images
+# are reproducible. Bump this in lockstep with debian:stable-slim upstream.
+FROM debian:12.13-slim AS builder
 COPY etlegacy*.tar.gz /legacy/server/
 RUN mkdir /legacy/homepath
 RUN cd /legacy/server && cat *.tar.gz | tar zxvf - -i --strip-components=1 && rm *.tar.gz
@@ -8,7 +10,7 @@ RUN rm /legacy/server/etl.$(arch) && rm /legacy/server/etl_bot.$(arch).sh && rm 
 # Squash the arch extension from binary and the script
 RUN mv /legacy/server/etlded.$(arch) /legacy/server/etlded && mv /legacy/server/etlded_bot.$(arch).sh /legacy/server/etlded_bot.sh
 
-FROM debian:stable-slim
+FROM debian:12.13-slim
 RUN useradd -Ms /bin/bash legacy
 COPY --from=builder --chown=legacy:legacy /legacy /legacy/
 COPY --chown=legacy:legacy entrypoint.sh /legacy/server/entrypoint.sh
