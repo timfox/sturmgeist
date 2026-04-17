@@ -2,9 +2,10 @@ package com.etlegacy.app;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
 import android.util.DisplayMetrics;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.robotium.solo.Solo;
 
@@ -29,10 +30,8 @@ public class TestETL {
 
     @Before
     public void setUp() {
-        app = (Application) InstrumentationRegistry.getTargetContext().getApplicationContext();
-
-        instrumentation = new Instrumentation();
         instrumentation = InstrumentationRegistry.getInstrumentation();
+        app = (Application) instrumentation.getTargetContext().getApplicationContext();
         instrumentation.runOnMainSync(() -> instrumentation.callApplicationOnCreate(app));
     }
 
