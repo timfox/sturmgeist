@@ -26,7 +26,7 @@ jobs:
       tag: ${{ steps.git.outputs.tag }}
       uid: ${{ steps.git.outputs.uid }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: pre-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -75,7 +75,7 @@ jobs:
             git config --global --add safe.directory /code
             ./easybuild.sh build -64 -mod
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lnx64-mod
           path: |
@@ -85,7 +85,7 @@ jobs:
             build/legacy/tvgame*.so
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: incomplete-mod-pk3
           path: build/legacy/legacy_*.pk3
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: pre-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -112,7 +112,7 @@ jobs:
             git config --global --add safe.directory /code
             ./easybuild.sh build -mod
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lnx32-mod
           path: |
@@ -128,7 +128,7 @@ jobs:
     container:
       image: etlegacy/lnx-aarch64-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -141,7 +141,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           ./easybuild.sh build -RPIT -mod -ninja
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lnx-aarch64-mod
           path: |
@@ -155,7 +155,7 @@ jobs:
     runs-on: macos-14
     needs: pre-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -181,7 +181,7 @@ jobs:
         run: |
           ./easybuild.sh build -64 -mod --osx=10.10 --osx-arc="x86_64;arm64" -j
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: osx-mod
           path: |
@@ -195,7 +195,7 @@ jobs:
     runs-on: windows-2022
     needs: pre-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -208,7 +208,7 @@ jobs:
         run: |
           call .\easybuild.bat build -mod
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: win-mod
           path: |
@@ -222,7 +222,7 @@ jobs:
     runs-on: windows-2022
     needs: pre-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -235,7 +235,7 @@ jobs:
         run: |
           call .\easybuild.bat build -mod -64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: win64-mod
           path: |
@@ -258,13 +258,13 @@ jobs:
     container:
       image: etlegacy/android-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
           fetch-depth: 0
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
           java-version: "17"
@@ -277,7 +277,7 @@ jobs:
           ./gradlew publishToMavenLocal --stacktrace --info
 
       - name: Upload JoyStick Dependency Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-joystick-packages
           path: "/root/.m2/repository/com/etlegacy/android/joystick/"
@@ -307,7 +307,7 @@ jobs:
           ls -ltrah
 
       - name: Upload arm64-v8a
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-arm64-mod
           path: |
@@ -316,7 +316,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload x86
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-x86-mod
           path: |
@@ -325,7 +325,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload x86_64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-x86_64-mod
           path: |
@@ -347,11 +347,11 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ pre-build, lnx64-mod, lnx32-mod, osx-mod, win-mod, win64-mod, lnx-aarch64-mod, android-mod ]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: incomplete-mod-pk3
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: "*-mod"
           path: platforms
@@ -380,13 +380,13 @@ jobs:
             incomplete-mod-pk3
             *-mod
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: All-mods
           path: legacy_*.pk3
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mod-zip
           path: etlegacy-mod-*.zip
@@ -409,7 +409,7 @@ jobs:
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -428,7 +428,7 @@ jobs:
           action_group=$(groups "$action_name" | awk '{print $3}')
           sudo chown "${action_name}:${action_group}" -R .
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: build/legacy
@@ -446,7 +446,7 @@ jobs:
             cd build/
             cpack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lnx64-packages
           path: |
@@ -458,7 +458,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [pre-build, mod-merger]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -477,7 +477,7 @@ jobs:
           action_group=$(groups "$action_name" | awk '{print $3}')
           sudo chown "${action_name}:${action_group}" -R .
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: build/legacy
@@ -495,7 +495,7 @@ jobs:
             cd build/
             cpack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lnx32-packages
           path: |
@@ -513,7 +513,7 @@ jobs:
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -521,7 +521,7 @@ jobs:
         run: |
           ./easybuild.sh build -RPIT -ninja
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: build/legacy
@@ -535,7 +535,7 @@ jobs:
         working-directory: build
         run: cpack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lnx-aarch64-packages
           path: |
@@ -551,7 +551,7 @@ jobs:
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -568,7 +568,7 @@ jobs:
         run: |
           ./easybuild.sh build -64 --osx=10.10 --osx-arc="x86_64;arm64" -j
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: build/legacy
@@ -581,7 +581,7 @@ jobs:
         shell: bash
         run: ./easybuild.sh package -64 --osx=10.10 --osx-arc="x86_64;arm64" -j
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: osx-packages
           path: |
@@ -599,7 +599,7 @@ jobs:
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -608,7 +608,7 @@ jobs:
         run: |
           call .\easybuild.bat build
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: build/legacy
@@ -618,7 +618,7 @@ jobs:
         working-directory: build/legacy
 
       - name: Upload Win etl.exe
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: artifact-exe-upload-step
         with:
           name: win-exe
@@ -627,7 +627,7 @@ jobs:
           if-no-files-found: error
 
       - name: SignPath Win Exe Snapshot
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
           organization-id: "${{ secrets.SIGNPATH_ORGANIZATION_ID }}"
@@ -638,7 +638,7 @@ jobs:
           output-artifact-directory: "win-exe"
 
       - name: SignPath Win Exe Release
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         if: github.ref_type == 'tag'
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -656,7 +656,7 @@ jobs:
           cp D:\a\etlegacy\etlegacy\win-exe\etl.exe .
           cpack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: artifact-upload-step
         with:
           name: win-packages
@@ -675,7 +675,7 @@ jobs:
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
@@ -684,7 +684,7 @@ jobs:
         run: |
           call .\easybuild.bat build -64
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: build/legacy
@@ -694,7 +694,7 @@ jobs:
         working-directory: build/legacy
 
       - name: Upload Win64 etl.exe
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: artifact-exe-upload-step
         with:
           name: win64-exe
@@ -703,7 +703,7 @@ jobs:
           if-no-files-found: error
 
       - name: SignPath Win64 Exe Snapshot
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
           organization-id: "${{ secrets.SIGNPATH_ORGANIZATION_ID }}"
@@ -714,7 +714,7 @@ jobs:
           output-artifact-directory: "win64-exe"
 
       - name: SignPath Win64 Exe Release
-        uses: signpath/github-action-submit-signing-request@v1.3
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1.3
         if: github.ref_type == 'tag'
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -732,7 +732,7 @@ jobs:
           cp D:\a\etlegacy\etlegacy\win64-exe\etl.exe .
           cpack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: artifact-upload-step
         with:
           name: win64-packages
@@ -754,23 +754,23 @@ jobs:
     container:
       image: etlegacy/android-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
           java-version: "17"
 
       - name: Download JoyStick Dependency Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: android-joystick-packages
           path: "/root/.m2/repository/com/etlegacy/android/joystick/"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: All-mods
           path: app/src/main/assets
@@ -797,7 +797,7 @@ jobs:
           for FILE in ./app/build/outputs/apk/*/*; do mv "$FILE" "${FILE%-*}.apk"; done
           ls -R app/build/outputs/apk
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-packages
           path: app/build/outputs/apk/*/etlegacy*.apk
@@ -820,7 +820,7 @@ jobs:
         run: |
           echo "hash_exists=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.LEGACY_UPLOAD_CHECK_URL }}${{ github.sha }} 2>/dev/null)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         if: ${{ steps.vars.outputs.hash_exists == '404' }}
         with:
           pattern: win*
@@ -873,7 +873,7 @@ jobs:
           wait-for-completion: true
           output-artifact-directory: "win64-packages"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ steps.vars.outputs.hash_exists == '404' }}
         with:
           name: win-packages
@@ -883,7 +883,7 @@ jobs:
           overwrite: true
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ steps.vars.outputs.hash_exists == '404' }}
         with:
           name: win64-packages
@@ -917,7 +917,7 @@ jobs:
         run: |
           echo "hash_exists=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.LEGACY_UPLOAD_CHECK_URL }}${{ github.sha }} 2>/dev/null)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         if: ${{ steps.vars.outputs.hash_exists == '404' }}
         with:
           path: packages
@@ -958,11 +958,11 @@ jobs:
       CI_ETL_DESCRIBE: ${{needs.pre-build.outputs.describe}}
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: lnx64-packages
           path: build/package
