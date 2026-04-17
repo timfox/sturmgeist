@@ -52,6 +52,12 @@ pixi run upstream-fetch
 
 Formatting and workflow checks used in CI can be run locally with `pixi install` and `pixi run -e validation check-changes`. The default comparison branch is read from `.upstream-remote-branch` when that file exists (for example `origin/main` on forks that use `main` as the default branch).
 
+## COVERITY SCAN (OPTIONAL)
+
+The scheduled **Coverity Scan** workflow (`.github/workflows/coverity-scan.yml`) does nothing unless you add repository **secrets** `COVERITY_SCAN_TOKEN` and `COVERITY_SCAN_EMAIL` from your [Coverity Scan](https://scan.coverity.com/) project. Without them, the workflow completes successfully and skips the build.
+
+Optional **variable** `COVERITY_PROJECT` (repository **Actions → Variables**) should match your Coverity project slug (for example `timfox/sturmgeist`). If unset, the workflow defaults to `etlegacy/etlegacy` for compatibility with the upstream project.
+
 ## COMMUNICATION
 
 Communication happens online at:

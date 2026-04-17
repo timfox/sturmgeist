@@ -1,5 +1,10 @@
 name: "Coverity Scan"
 
+# Requires repository secrets: COVERITY_SCAN_TOKEN, COVERITY_SCAN_EMAIL.
+# Optional variable COVERITY_PROJECT (Settings → Secrets and variables → Actions → Variables):
+#   Coverity project slug, e.g. timfox/sturmgeist. Defaults to etlegacy/etlegacy when unset.
+# If secrets are missing (typical on forks), the scan job is skipped (workflow still succeeds).
+
 on:
   # push:
   #   branches: [ main, master ]
@@ -10,8 +15,29 @@ on:
     - cron: "0 0 * * FRI"
 
 jobs:
+  coverity-gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run_coverity: ${{ steps.gate.outputs.run_coverity }}
+    steps:
+      - id: gate
+        name: Check Coverity secrets are configured
+        env:
+          COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          COVERITY_SCAN_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+        run: |
+          if [ -n "$COVERITY_SCAN_TOKEN" ] && [ -n "$COVERITY_SCAN_EMAIL" ]; then
+            echo "run_coverity=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_coverity=false" >> "$GITHUB_OUTPUT"
+          fi
+
   latest:
     runs-on: ubuntu-latest
+    needs: [coverity-gate]
+    if: needs.coverity-gate.outputs.run_coverity == 'true'
+    env:
+      COVERITY_PROJECT: ${{ vars.COVERITY_PROJECT }}
     steps:
       - name: Install Dependencies
         run: |
@@ -36,7 +62,11 @@ jobs:
 
       - name: Download Coverity Build Tool
         run: |
-          wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=etlegacy/etlegacy" -O cov-analysis-linux64.tar.gz
+          set -euo pipefail
+          PROJECT="${COVERITY_PROJECT:-etlegacy/etlegacy}"
+          wget -q https://scan.coverity.com/download/cxx/linux64 \
+            --post-data "token=${TOKEN}&project=${PROJECT}" \
+            -O cov-analysis-linux64.tar.gz
           mkdir cov-analysis-linux64
           tar -xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
         env:
@@ -50,17 +80,20 @@ jobs:
 
       - name: Submit result to Coverity Scan
         run: |
+          set -euo pipefail
+          PROJECT="${COVERITY_PROJECT:-etlegacy/etlegacy}"
+          PROJECT_QUERY="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$PROJECT")"
           version=$(git describe --always | cut -d 'g' -f2- | cut -c -7)
           cd build
           tar -czvf etlegacy.tgz cov-int
           curl -k \
-            --form project=etlegacy \
+            --form "project=${PROJECT}" \
             --form token="$TOKEN" \
             --form email="$EMAIL" \
             --form file=@etlegacy.tgz \
             --form version="$version" \
             --form description="development" \
-            https://scan.coverity.com/builds?project=etlegacy%2Fetlegacy
+            "https://scan.coverity.com/builds?project=${PROJECT_QUERY}"
         env:
           TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
           EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
