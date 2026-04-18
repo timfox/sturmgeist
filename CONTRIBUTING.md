@@ -58,6 +58,10 @@ The scheduled **Coverity Scan** workflow (`.github/workflows/coverity-scan.yml`)
 
 Optional **variable** `COVERITY_PROJECT` (repository **Actions → Variables**) should match your Coverity project slug (for example `timfox/sturmgeist`). If unset, the workflow defaults to `etlegacy/etlegacy` for compatibility with the upstream project.
 
+## ANDROID JOYSTICK (VENDORED)
+
+The on-screen joystick library is kept under **`app/libs/joystick/`** as normal project files (not a git submodule). When upgrading Android Gradle Plugin or the library itself, keep **`app/libs/joystick/build.gradle`** in step with the root **`build.gradle`** `classpath` version. Optional: compare with [etlegacy/JoyStick](https://github.com/etlegacy/JoyStick) upstream and port changes manually.
+
 ## COMMUNICATION
 
 Communication happens online at:

@@ -117,6 +117,8 @@ $ git submodule init
 $ git submodule update
 ```
 
+That initializes the **`libs/`** submodule (bundled native libraries). The **Android JoyStick** sources live under **`app/libs/joystick/`** in this fork (vendored in-tree, not a submodule).
+
 This downloads the essential dependencies into the `libs/`directory. You can choose
 whether to use bundled libraries instead of the system ones by changing the
 `BUNDLED_LIBS` variable in the CMakeLists.txt configuration file. You can then select
