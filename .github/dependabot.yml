@@ -45,6 +45,16 @@ updates:
       - "dependencies"
       - "android"
 
+  # Vendored JoyStick library (formerly a submodule); keep Gradle deps current.
+  - package-ecosystem: "gradle"
+    directory: "/app/libs/joystick"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "android"
+
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:

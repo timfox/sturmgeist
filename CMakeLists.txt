@@ -150,8 +150,11 @@ set(BUNDLED_TARGETS_FOLDER Bundled)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ${CMAKE_TARGETS_FOLDER})
 
-# Set language levels
-set(CMAKE_CXX_STANDARD 11)
+# Set language levels (C++17: constexpr-if, nested namespace, structured bindings;
+# still avoids C++20 modules/concepts for older toolchains in long-tail CI images)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)  # engine is intentionally C99 while mods remain C90
 
 # Find and setup programs the build needs
