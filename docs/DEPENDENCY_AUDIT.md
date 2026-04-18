@@ -46,7 +46,7 @@ Docker base images).
 | P2 (CI) | `Ilshidur/action-discord@0.3.0` | 0.3.0 | 0.3.2 (pinned SHA) | Pin to a SHA (Dependabot best practice for third-party Actions). |
 | P2 (CI) | `addnab/docker-run-action@v3` | floating `v3` | pin to SHA | supply-chain hygiene. |
 | P2 (CI) | `canonical/snapcraft-multiarch-action@v1.10.1` | 1.10.1 | latest on `v1` | tag is fine but pinning to SHA preferred. |
-| P3 | Docker `misc/docker/build.Dockerfile` → `centos:7` | centos:7 | replace | **CentOS 7 reached EOL on 2024-06-30**. CI still succeeds, but no security updates; should migrate to Rocky 9 / Alma 9 or Debian 12. |
+| P3 | Docker `misc/docker/build.Dockerfile` | ~~centos:7~~ → **rockylinux/9** | **Migrated** — Rocky Linux 9 with multilib, CRB, EPEL; same CMake / Wayland / Ninja bootstrap as before. Rebuild `etlegacy/lnx-build` via LinuxBuildMachine workflow after merge. |
 | P3 | Docker `misc/docker/lnx-aarch64.Dockerfile` → `debian:11.8-slim` | 11.8 | `debian:12-slim` | Debian 11 LTS ends 2026-08-31. Easy swap. |
 | P3 | Docker `misc/docker/android.Dockerfile` → `thyrlian/android-sdk:latest` | `:latest` | pin digest | `:latest` is non-reproducible. |
 | P3 | Docker `misc/docker/dedicated.Dockerfile` → `debian:stable-slim` | floating | pin to `debian:12.x-slim` | reproducibility. |
@@ -100,7 +100,7 @@ All P0 items listed below are "high-confidence" by that rule.
 | Gradle wrapper 8.13 | `gradle/wrapper/gradle-wrapper.properties` → `gradle-8.13-bin.zip`. |
 | Android deps | `app/build.gradle` lines 160–171. |
 | CI actions | `.github/workflows/*.yml` — all `uses:` lines inventoried above. |
-| CentOS 7 base image | `misc/docker/build.Dockerfile` → `FROM centos:7`. |
+| Rocky Linux 9 build image | `misc/docker/build.Dockerfile` → `FROM rockylinux/9`. |
 | Debian 11.8 | `misc/docker/lnx-aarch64.Dockerfile` → `FROM debian:11.8-slim`. |
 | android-sdk:latest | `misc/docker/android.Dockerfile` → `FROM thyrlian/android-sdk:latest`. |
 
@@ -222,7 +222,7 @@ No patches, no build-system refactors, no API code touched.
 ### Phase 3 — P2/P3 hygiene (third PR)
 
 14. Pin all third-party GitHub Actions (`Ilshidur/action-discord`, `addnab/docker-run-action`, `canonical/snapcraft-multiarch-action`, `snapcore/action-publish`, `geekyeggo/delete-artifact`, `signpath/github-action-submit-signing-request`) to explicit commit SHAs and add `dependabot.yml` or `renovate.json`.
-15. Migrate `misc/docker/build.Dockerfile` off CentOS 7 (EOL since 2024-06-30). Suggested target: Rocky Linux 9 or Debian 12.
+15. ~~Migrate `misc/docker/build.Dockerfile` off CentOS 7~~ — **done** (Rocky Linux 9).
 16. Bump `misc/docker/lnx-aarch64.Dockerfile` `debian:11.8-slim` → `debian:12-slim`.
 17. Pin `misc/docker/android.Dockerfile` and `misc/docker/dedicated.Dockerfile` to image digests.
 
