@@ -36,6 +36,7 @@
 
 #ifdef FEATURE_RENDERER_VULKAN
 #include <SDL2/SDL_vulkan.h>
+#include "../renderer_vk/vulkan/vk_rhi.h"
 #endif
 
 #include <stdarg.h>
@@ -429,6 +430,13 @@ static void GLimp_InitCvars(void)
 void GLimp_Shutdown(void)
 {
 	IN_Shutdown();
+
+#ifdef FEATURE_RENDERER_VULKAN
+	if (VkRHI_IsActive())
+	{
+		VkRHI_Shutdown();
+	}
+#endif
 
 	if (main_window)
 	{
@@ -861,6 +869,65 @@ static int GLimp_SetMode(glconfig_t *glConfig, int mode, qboolean fullscreen, qb
 	}
 	stencilBits = r_stencilbits->integer;
 
+#ifdef FEATURE_RENDERER_VULKAN
+	if (flags & SDL_WINDOW_VULKAN)
+	{
+		main_window = SDL_CreateWindow(GlobalGameTitle, x, y, glConfig->vidWidth, glConfig->vidHeight, flags | SDL_WINDOW_SHOWN);
+
+		if (!main_window)
+		{
+			Com_Printf("SDL_CreateWindow (Vulkan) failed: %s\n", SDL_GetError());
+			return RSERR_INVALID_MODE;
+		}
+
+		if (fullscreen)
+		{
+			SDL_DisplayMode modefullScreen;
+
+			if (colorBits == 16)
+			{
+				modefullScreen.format = SDL_PIXELFORMAT_RGB565;
+			}
+			else
+			{
+				modefullScreen.format = SDL_PIXELFORMAT_RGB24;
+			}
+
+			modefullScreen.w            = glConfig->vidWidth;
+			modefullScreen.h            = glConfig->vidHeight;
+			modefullScreen.refresh_rate = glConfig->displayFrequency = r_displayRefresh->integer;
+			modefullScreen.driverdata   = NULL;
+
+			if (SDL_SetWindowDisplayMode(main_window, &modefullScreen) < 0)
+			{
+				Com_Printf("SDL_SetWindowDisplayMode (Vulkan) failed: %s\n", SDL_GetError());
+				SDL_DestroyWindow(main_window);
+				main_window = NULL;
+				return RSERR_INVALID_MODE;
+			}
+		}
+
+		SDL_SetWindowIcon(main_window, icon);
+
+		glConfig->colorBits   = ((!colorBits) || (colorBits >= 32)) ? 24 : colorBits;
+		glConfig->depthBits   = depthBits;
+		glConfig->stencilBits = stencilBits;
+
+		Com_Printf("Using %d color bits, %d depth, %d stencil display (Vulkan)\n",
+		           glConfig->colorBits, glConfig->depthBits, glConfig->stencilBits);
+
+		if (!VkRHI_Init(main_window))
+		{
+			Com_Printf(S_COLOR_RED "Vulkan: VkRHI_Init failed\n");
+			SDL_DestroyWindow(main_window);
+			main_window = NULL;
+			return RSERR_INVALID_MODE;
+		}
+
+		goto glimp_after_mode_loop;
+	}
+#endif
+
 	for (i = 0; i < 16; i++)
 	{
 		int testColorBits, testDepthBits, testStencilBits;
@@ -1066,6 +1133,8 @@ static int GLimp_SetMode(glconfig_t *glConfig, int mode, qboolean fullscreen, qb
 		break;
 	}
 
+glimp_after_mode_loop:
+
 	GLimp_DetectAvailableModes();
 
 	if (!main_window)
@@ -1247,7 +1316,16 @@ void GLimp_EndFrame(void)
 	//FIXME: remove this nonesense
 	if (Q_stricmp(Cvar_VariableString("r_drawBuffer"), "GL_FRONT") != 0)
 	{
-		SDL_GL_SwapWindow(main_window);
+#ifdef FEATURE_RENDERER_VULKAN
+		if (VkRHI_IsActive())
+		{
+			VkRHI_SwapFrame();
+		}
+		else
+#endif
+		{
+			SDL_GL_SwapWindow(main_window);
+		}
 	}
 
 	if (r_fullscreen->modified)

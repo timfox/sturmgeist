@@ -174,6 +174,7 @@ SET(RENDERER_COMMON_VULKAN
 
 LIST(REMOVE_ITEM RENDERER_COMMON ${RENDERER_COMMON_OPENGL} ${RENDERER_COMMON_VULKAN})
 list(FILTER RENDERER_COMMON EXCLUDE REGEX "tr_image_svg\\.c$")
+list(FILTER RENDERER_COMMON EXCLUDE REGEX "tr_common_vulkan\\.c$")
 
 FILE(GLOB RENDERER_COMMON_DYNAMIC
 	"src/qcommon/q_shared.c"
@@ -215,11 +216,16 @@ FILE(GLOB RENDERER_VULKAN_FILES
 	"src/renderer_vk/vulkan/*.c"
 	"src/renderer_vk/vulkan/*.h"
 )
+list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi\\.c$")
+list(APPEND RENDERER_VULKAN_FILES "src/renderercommon/tr_common_vulkan.c")
 
 FILE(GLOB RENDERER_VULKAN_SHADERS
 	"src/renderer_vk/glsl/*.glsl"
 	"src/renderer_vk/glsl/*/*.glsl"
 )
+
+# Shared between the SDL client and the Vulkan renderer module (dynamic load).
+set(VULKAN_RHI_SRC "${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi.c")
 
 FILE(GLOB IRC_CLIENT_FILES
 	"src/irc/htable.c"
