@@ -13,7 +13,7 @@ Docker base images).
 
 | Phase | Status |
 |---|---|
-| 1 — P0 bundled C/C++ security bumps (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **deferred — `libs/` is the `etlegacy/etlegacy-libs` submodule** and the actual source lives in another repo. Findings stay in this doc as the tracked plan. |
+| 1 — P0 bundled C/C++ security bumps (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **Partially landed in `etlegacy/etlegacy-libs` (`libs/` submodule):** curl **8.12.1**, OpenSSL **3.2.6**, wolfSSL **5.7.6-stable** via `libs/CMakeLists.txt`. FreeType / libpng / cJSON remain as vendored trees in that repo (see executive summary). |
 | 2 — Android hygiene | **landed in this PR** (see commits): deprecated `com.android.support.test` removed; migrated to `androidx.test:runner 1.6.2` + `rules 1.6.1` + `junit 1.2.1`; `TestETL.java` and `AndroidManifest.xml` ported; `org.jetbrains.kotlin:kotlin-bom` 1.8.0 → 2.0.21. |
 | 3 — CI/Docker hygiene | **landed in this PR**: every third-party GitHub Action SHA-pinned (`addnab/docker-run-action`, `geekyeggo/delete-artifact`, `signpath/github-action-submit-signing-request`, `prefix-dev/setup-pixi`, `canonical/snapcraft-multiarch-action`, `snapcore/action-publish`, `Ilshidur/action-discord` bumped 0.3.0 → 0.3.2); first-party `actions/checkout`, `actions/upload-artifact`, `actions/download-artifact`, and `actions/setup-java` v4 refs pinned to commit SHAs; `misc/docker/lnx-aarch64.Dockerfile` debian:11.8-slim → debian:12.13-slim; `misc/docker/dedicated.Dockerfile` now pins to a concrete 12.13 instead of floating `stable-slim`; `misc/docker/android.Dockerfile` pins `thyrlian/android-sdk` by digest; `.github/dependabot.yml` added covering `github-actions`, `gradle`, and `docker`. |
 | 4 — Lua 5.4.3 → 5.4.7 and libtheora remediation | deferred (lives in `libs/` submodule). |
@@ -25,9 +25,9 @@ Docker base images).
 | Priority | Dependency | Current | Recommended | Reason |
 |---|---|---|---|---|
 | P0 (security) | FreeType (`libs/freetype`) | 2.10.2 | 2.13.3+ | **CVE-2025-27363** (heap OOB write in TTF/variable fonts, CVSS 8.1, exploited in the wild). Affects ≤ 2.13.0. |
-| P0 (security) | libcurl (`libs/CMakeLists.txt`) | 8.5.0 | 8.12.1+ | 8 CVEs fixed between 8.5.0 and 8.12.0 (netrc credential leaks, HSTS subdomain, gzip integer overflow, ASN.1 overreads, …). |
-| P0 (security) | OpenSSL (`libs/CMakeLists.txt`) | 3.2.0 | 3.2.6 (LTS track) | 3.2.0 is ~2½ years old; 3.2.6 (Sep 2025) is the latest security patch of the 3.2 series. Preferable to a jump to 3.4.x for stability on this consumer. |
-| P0 (security) | wolfSSL (`libs/CMakeLists.txt`) | 5.6.6 | 5.7.6+ (latest stable on the 5.7 track) | CVE-2023-6935 (Marvin/RSA timing) + 6936/6937 affect 5.6.6. |
+| P0 (security) | libcurl (`libs/CMakeLists.txt`) | **8.12.1** | keep | Bundled tarball bumped from 8.5.0 (CVE fixes through 8.12.x). |
+| P0 (security) | OpenSSL (`libs/CMakeLists.txt`) | **3.2.6** | keep | Bundled tarball bumped from 3.2.0 on the 3.2 LTS line. |
+| P0 (security) | wolfSSL (`libs/CMakeLists.txt`) | **5.7.6-stable** | keep | Bundled tarball bumped from 5.6.6 (GitHub archive tag); dropped unused `WolfSSL.patch` / `find_package(Patch)` hook. |
 | P0 (security) | libpng (`libs/libpng`) | 1.6.47 | 1.6.50+ | Latent read-beyond-end-of-malloc in `png_write_iCCP` fixed in 1.6.47, but 1.6.47 still predates the iCCP/iTXt fixes shipped in 1.6.48–1.6.50. |
 | P0 (security) | cJSON (`libs/cjson`) | 1.7.15 | 1.7.18 | CVE-2023-53154 (heap buffer over-read in `parse_string`), CVE-2024-31755 (NULL deref), and a heap-buffer-overflow fix all land in 1.7.18. |
 | P1 (stability) | libjpeg-turbo (`libs/jpegturbo`) | 2.0.4 | 3.0.x (latest 3.0.4) | 2.0.4 is EOL. CVE-2020-17541, CVE-2021-20205. 3.0.x is a drop-in API match; 2.1.x is an intermediate safe stop. |
@@ -80,9 +80,9 @@ All P0 items listed below are "high-confidence" by that rule.
 | Finding | Source (file and exact location) |
 |---|---|
 | FreeType 2.10.2 in tree | `libs/freetype/include/freetype/freetype.h` defines `FREETYPE_MAJOR 2 / MINOR 10 / PATCH 2`. |
-| libcurl 8.5.0 URL | `libs/CMakeLists.txt` → `CURL_DOWNLOAD_URL "https://github.com/curl/curl/releases/download/curl-8_5_0/curl-8.5.0.tar.gz"`. |
-| OpenSSL 3.2.0 URL | `libs/CMakeLists.txt` → two `ExternalProject_Add(bundled_openssl ... openssl-3.2.0.tar.gz)` blocks (Win/Unix). |
-| wolfSSL 5.6.6 URL | `libs/CMakeLists.txt` → `URL https://github.com/wolfSSL/wolfssl/releases/download/v5.6.6-stable/wolfssl-5.6.6.tar.gz`. |
+| libcurl 8.12.1 URL | `libs/CMakeLists.txt` → `CURL_DOWNLOAD_URL` … `curl-8_12_1/curl-8.12.1.tar.gz`. |
+| OpenSSL 3.2.6 URL | `libs/CMakeLists.txt` → two `ExternalProject_Add(bundled_openssl … openssl-3.2.6.tar.gz)` blocks (Win/Unix). |
+| wolfSSL 5.7.6-stable URL | `libs/CMakeLists.txt` → `URL https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.7.6-stable.tar.gz`. |
 | SDL2 2.30.9 URL | `libs/CMakeLists.txt` → `URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz`. |
 | libpng 1.6.47 in tree | `libs/libpng/png.h` → `PNG_LIBPNG_VER_STRING "1.6.47"`. |
 | cJSON 1.7.15 in tree | `libs/cjson/cJSON.h` → `CJSON_VERSION_MAJOR 1 / MINOR 7 / PATCH 15`. |
@@ -116,27 +116,26 @@ All P0 items listed below are "high-confidence" by that rule.
 - Risk: 2.11 added mandatory default-include of `zlib` / `bzip2` / `png` *detection*, but because we pass `-DCMAKE_DISABLE_FIND_PACKAGE_*` and `-DFT_WITH_*=OFF`, the existing flags cover it.
 - **Confidence:** high.
 
-### libcurl 8.5.0 → 8.12.1
+### libcurl 8.12.1 (bundled)
 
-- We pass `-DCURL_DISABLE_*` flags that still exist in 8.12. 8.11 renamed `CMAKE_USE_GSSAPI` → `CURL_USE_GSSAPI`; we pass `-DCMAKE_USE_GSSAPI=OFF` but `CURL_USE_GSSAPI` defaults to OFF, so behavior is preserved — the old flag is silently ignored. Consider renaming during the upgrade.
+- We pass `-DCURL_DISABLE_*` flags that still exist in 8.12. GSSAPI is disabled with `-DCURL_USE_GSSAPI=OFF`.
 - `-DENABLE_MANUAL=OFF`, `-DBUILD_CURL_EXE=OFF`, `-DENABLE_ARES=OFF`, `-DCURL_WINDOWS_SSPI=OFF`, `-DCURL_USE_LIBPSL=OFF`, all still recognized through 8.12.
 - ABI: linked statically, soname not a concern.
 - Runtime API usage in `src/client/cl_main.c` (easy-perform), `src/qcommon/dl_main_curl.c`, and `src/server/sv_update.c` uses only `curl_easy_*` / `curl_multi_*` / `curl_slist_*` — all stable.
 - **Confidence:** high.
 
-### OpenSSL 3.2.0 → 3.2.6
+### OpenSSL 3.2.6 (bundled)
 
-- Same series, patch only.
+- Same 3.2.x series as before, patch release only.
 - Our `./Configure linux-x86_64 / darwin64-x86_64 / darwin64-arm64 / linux-x86 / linux-aarch64 / VC-WIN64 / VC-WIN32` targets are unchanged in 3.2.6.
 - NMake / make targets `install_sw` still exist.
 - **Confidence:** high.
 
-### wolfSSL 5.6.6 → 5.7.6
+### wolfSSL 5.7.6-stable (bundled)
 
 - `WOLFSSL_CURL=yes` / `WOLFSSL_OPENSSLEXTRA=yes` / `WOLFSSL_ASIO=yes` / `WOLFSSL_CRL=yes` still present.
-- 5.7.0 added `--enable-secure-renegotiation` by default on the CMake side — we do not test against it and it is off by default.
-- The `WolfSSL.patch` in `libs/patches/WolfSSL.patch` was written against 5.6.x — **needs verification** against the 5.7 CMakeLists. This is the only non-trivial risk in the P0 batch.
-- **Confidence:** medium (patch refresh likely required).
+- The previous `WolfSSL.patch` / `find_package(Patch)` path was unused in-tree; the upgrade uses the upstream GitHub archive tarball as-is.
+- **Confidence:** high for the CMake `ExternalProject` path (full CI still recommended).
 
 ### libpng 1.6.47 → 1.6.50
 
@@ -197,15 +196,9 @@ No patches, no build-system refactors, no API code touched.
 ### Phase 1 — P0 security (single PR, one commit per lib)
 
 1. **FreeType 2.10.2 → 2.13.3** — overlay `libs/freetype` from the upstream 2.13.3 tarball. (This is the biggest overlay. Consider making this its own PR if the submodule stores freetype there.)
-2. **libcurl 8.5.0 → 8.12.1** — edit `libs/CMakeLists.txt`:
-   - `CURL_DOWNLOAD_URL` → `.../curl-8_12_1/curl-8.12.1.tar.gz`
-   - `CURL_DOWNLOAD_HASH` → MD5 from https://curl.se/download.html
-   - rename `-DCMAKE_USE_GSSAPI=OFF` → `-DCURL_USE_GSSAPI=OFF`
-3. **OpenSSL 3.2.0 → 3.2.6** — edit both `ExternalProject_Add(bundled_openssl …)` blocks:
-   - `URL …/openssl-3.2.6.tar.gz` / `URL_HASH MD5=<from openssl.org/source/old>`.
-4. **wolfSSL 5.6.6 → 5.7.6** — edit `ExternalProject_Add(bundled_wolfssl …)`:
-   - `URL …/v5.7.6-stable/wolfssl-5.7.6.tar.gz` / hash.
-   - Verify `libs/patches/WolfSSL.patch` still applies (`git apply --check` at build time is already enforced via `PATCH_COMMAND`); if not, regenerate against the 5.7.6 tree.
+2. ~~**libcurl 8.5.0 → 8.12.1**~~ — **done** in `libs/CMakeLists.txt` (URL, MD5, `-DCURL_USE_GSSAPI=OFF`).
+3. ~~**OpenSSL 3.2.0 → 3.2.6**~~ — **done** in both `bundled_openssl` blocks.
+4. ~~**wolfSSL 5.6.6 → 5.7.6**~~ — **done** (`v5.7.6-stable` GitHub archive + SHA256; removed dead patch wiring).
 5. **libpng 1.6.47 → 1.6.50** — overlay `libs/libpng`.
 6. **cJSON 1.7.15 → 1.7.18** — overwrite `libs/cjson/cJSON.{c,h}` and `libs/cjson/cJSON_Utils.{c,h}`.
 
