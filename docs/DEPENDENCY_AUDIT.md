@@ -1,22 +1,21 @@
-# Dependency Audit — ET: Legacy
+# Dependency audit — Sturmgeist / ET: Legacy
 
-Scope: every explicitly pinned third-party dependency in this repository
-(bundled C/C++ libraries in `libs/`, sources downloaded via `ExternalProject_Add`
-in `libs/CMakeLists.txt`, Android/Gradle dependencies in `app/build.gradle` and
-`app/libs/joystick`, the Gradle wrapper, GitHub Actions, the Pixi toolchain, and
-Docker base images).
+Scope: pinned third-party dependencies in this tree and its **`libs`** submodule
+(bundled C/C++ under `libs/`, `ExternalProject_Add` entries in `libs/CMakeLists.txt`,
+Android/Gradle in `app/build.gradle` and `app/libs/joystick`, Gradle wrapper,
+GitHub Actions, Pixi, and Docker images under `misc/docker/`).
 
-> Reporting date: 2026-04-17. "Latest" reflects releases verified via
-> upstream changelogs / advisories on that date.
+> Last reviewed: 2026-04-18. Version targets reflect advisories and changelogs
+> current to the reporting date.
 
-## Status in this PR
+## Rollup status
 
 | Phase | Status |
 |---|---|
-| 1 — P0 bundled C/C++ security bumps (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **Partially prepared for the `libs` submodule:** curl **8.12.1**, OpenSSL **3.2.6**, wolfSSL **5.7.6-stable** via `libs/CMakeLists.txt` (mailbox patch under `misc/patches/`). FreeType / libpng / cJSON remain as vendored trees inside **`libs`** (see executive summary). |
-| 2 — Android hygiene | **landed in this PR** (see commits): deprecated `com.android.support.test` removed; migrated to `androidx.test:runner 1.6.2` + `rules 1.6.1` + `junit 1.2.1`; `TestETL.java` and `AndroidManifest.xml` ported; `org.jetbrains.kotlin:kotlin-bom` 1.8.0 → 2.0.21. |
-| 3 — CI/Docker hygiene | **landed in this PR**: every third-party GitHub Action SHA-pinned (`addnab/docker-run-action`, `geekyeggo/delete-artifact`, `signpath/github-action-submit-signing-request`, `prefix-dev/setup-pixi`, `canonical/snapcraft-multiarch-action`, `snapcore/action-publish`, `Ilshidur/action-discord` bumped 0.3.0 → 0.3.2); first-party `actions/checkout`, `actions/upload-artifact`, `actions/download-artifact`, and `actions/setup-java` v4 refs pinned to commit SHAs; `misc/docker/lnx-aarch64.Dockerfile` debian:11.8-slim → debian:12.13-slim; `misc/docker/dedicated.Dockerfile` now pins to a concrete 12.13 instead of floating `stable-slim`; `misc/docker/android.Dockerfile` pins `thyrlian/android-sdk` by digest; `.github/dependabot.yml` added covering `github-actions`, `gradle`, and `docker`. |
-| 4 — Lua 5.4.3 → 5.4.7 and libtheora remediation | deferred (lives in `libs/` submodule). |
+| 1 — P0 bundled C/C++ security (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **Partially prepared:** curl **8.12.1**, OpenSSL **3.2.6**, wolfSSL **5.7.6-stable** are captured in `misc/patches/0001-libs-p0-curl-openssl-wolfssl.patch` for the **`libs`** submodule; apply there and bump the submodule pointer. FreeType / libpng / cJSON remain vendored in **`libs`**. |
+| 2 — Android hygiene | **Done:** AndroidX test stack, Kotlin BOM **2.0.21**, `TestETL` / manifest updates (see `app/build.gradle` and related paths). |
+| 3 — CI / Docker hygiene | **Done:** third-party and first-party Actions pinned to SHAs; Dependabot for actions, Gradle, Docker; Rocky **9** `lnx-build` image; **Debian 12.13-slim** aarch64 and dedicated images; Android SDK base image **digest**-pinned. |
+| 4 — Lua / Theora | **Deferred** — sources live in the **`libs`** submodule (see Phase 4 plan). |
 
 ---
 
@@ -40,23 +39,23 @@ Docker base images).
 | P2 | `androidx.appcompat` | 1.7.1 | 1.7.1 | current |
 | P2 | `androidx.recyclerview` | 1.4.0 | 1.4.0 | current |
 | P2 | `com.google.code.gson:gson` | 2.13.2 | 2.13.2 | current |
-| P2 | `org.jetbrains.kotlin:kotlin-bom` | 1.8.0 | 2.0.x (align with AGP 8.13 default) | Not a CVE, but 1.8.0 is ~2 years behind and forces older `kotlin-stdlib` transitively. |
-| P2 | `com.jayway.android.robotium:robotium-solo` | 5.6.3 | **deprecated/abandoned** | Last release 2017. Consider removing (the instrumented tests do not appear to be wired into CI) or migrating to Espresso. |
-| P2 | `com.android.support.test:runner:1.0.2` | 1.0.2 | `androidx.test:runner:1.6.2` | `com.android.support.*` is deprecated. Must move to AndroidX equivalents for newer AGP/androidx transitive chain. |
-| P2 (CI) | `Ilshidur/action-discord@0.3.0` | 0.3.0 | 0.3.2 (pinned SHA) | Pin to a SHA (Dependabot best practice for third-party Actions). |
-| P2 (CI) | `addnab/docker-run-action@v3` | floating `v3` | pin to SHA | supply-chain hygiene. |
-| P2 (CI) | `canonical/snapcraft-multiarch-action@v1.10.1` | 1.10.1 | latest on `v1` | tag is fine but pinning to SHA preferred. |
+| P2 | `org.jetbrains.kotlin:kotlin-bom` | **2.0.21** | keep | Aligned with AGP 8.13 in `app/build.gradle`. |
+| P2 | `com.jayway.android.robotium:robotium-solo` | 5.6.3 | **deprecated/abandoned** | Last release 2017; still listed in `app/build.gradle` for instrumented tests — consider Espresso or removal. |
+| P2 | `com.android.support.test:runner` | — | **removed** | Replaced with **`androidx.test:runner:1.6.2`** (+ rules / junit) in `app/build.gradle`. |
+| P2 (CI) | `Ilshidur/action-discord` | 0.3.2 | keep | Pinned to SHA in workflows. |
+| P2 (CI) | `addnab/docker-run-action` | v3 | keep | Pinned to SHA in workflows. |
+| P2 (CI) | `canonical/snapcraft-multiarch-action` | 1.10.1 | keep | Pinned to SHA in workflows. |
 | P3 | Docker `misc/docker/build.Dockerfile` | ~~centos:7~~ → **rockylinux/9** | **Migrated** — Rocky Linux 9 with multilib, CRB, EPEL; same CMake / Wayland / Ninja bootstrap as before. Rebuild `etlegacy/lnx-build` via LinuxBuildMachine workflow after merge. |
-| P3 | Docker `misc/docker/lnx-aarch64.Dockerfile` → `debian:11.8-slim` | 11.8 | `debian:12-slim` | Debian 11 LTS ends 2026-08-31. Easy swap. |
-| P3 | Docker `misc/docker/android.Dockerfile` → `thyrlian/android-sdk:latest` | `:latest` | pin digest | `:latest` is non-reproducible. |
-| P3 | Docker `misc/docker/dedicated.Dockerfile` → `debian:stable-slim` | floating | pin to `debian:12.x-slim` | reproducibility. |
+| P3 | Docker `misc/docker/lnx-aarch64.Dockerfile` | **debian:12.13-slim** | keep | Bumped from Debian 11 base. |
+| P3 | Docker `misc/docker/android.Dockerfile` | **thyrlian/android-sdk@sha256:…** | keep | Base image pinned by digest. |
+| P3 | Docker `misc/docker/dedicated.Dockerfile` | **debian:12.13-slim** (builder) | keep | Pinned point release instead of floating `stable-slim`. |
 | P4 | Lua (`libs/lua`) | 5.4.3 | 5.4.7 | Bugfixes only; same API; mods unaffected. |
 | P4 | libogg (`libs/ogg`) | 1.3.5 | 1.3.5 | current |
 | P4 | libvorbis (`libs/vorbis`) | 1.3.7 | 1.3.7 | current |
 | P4 | libtheora (`libs/theora`) | 1.1.1 (2009) | **no upstream** | Upstream unmaintained; 1.1.1 is the last release. Impacted by CVE-2024-56431 and CVE-2026-5673 (both out-of-bounds reads on malformed streams). Theora is a client-only codec used by the cinematic decoder; decisions below. |
 | P4 | OpenAL Soft (`libs/openal`) | 1.19.1 | 1.23.1+ | Many platform fixes; API-compatible. |
 | P4 | findlocale (`libs/findlocale`) | 0.46 (2005) | no upstream | vendored, tiny, no network input — leave as-is. |
-| P4 | Pixi toolchain (`pixi.toml`) | git 2.49, python 3.13.3, requests 2.32.4, etc. | keep; add `dependabot.yml` or equivalent | already near-current. |
+| P4 | Pixi toolchain (`pixi.toml`) | git 2.49, python 3.13.3, requests 2.32.4, etc. | keep | `dependabot.yml` covers actions / Gradle / Docker; Pixi deps stay manual. |
 
 ### What "high-confidence" upgrade means here
 
@@ -101,8 +100,8 @@ All P0 items listed below are "high-confidence" by that rule.
 | Android deps | `app/build.gradle` lines 160–171. |
 | CI actions | `.github/workflows/*.yml` — all `uses:` lines inventoried above. |
 | Rocky Linux 9 build image | `misc/docker/build.Dockerfile` → `FROM rockylinux/9`. |
-| Debian 11.8 | `misc/docker/lnx-aarch64.Dockerfile` → `FROM debian:11.8-slim`. |
-| android-sdk:latest | `misc/docker/android.Dockerfile` → `FROM thyrlian/android-sdk:latest`. |
+| Debian 12.13 aarch64 image | `misc/docker/lnx-aarch64.Dockerfile` → `FROM debian:12.13-slim`. |
+| Android SDK image digest | `misc/docker/android.Dockerfile` → `FROM thyrlian/android-sdk@sha256:…`. |
 
 ---
 
@@ -209,15 +208,15 @@ No patches, no build-system refactors, no API code touched.
 9. **GLEW 2.1.0 → 2.2.0** — overlay `libs/glew`.
 10. **OpenAL-Soft 1.19.1 → 1.23.1** — overlay `libs/openal`.
 11. **Gradle: JoyStick AGP** — sources are vendored in `app/libs/joystick/`; keep its `classpath 'com.android.tools.build:gradle:…'` aligned with the root `build.gradle` when upgrading AGP.
-12. **Kotlin BOM 1.8.0 → 2.0.21** in `app/build.gradle`.
-13. **Replace `com.android.support.test:runner:1.0.2` with `androidx.test:runner:1.6.2`** (or drop the instrumented test stanza entirely if unused).
+12. ~~**Kotlin BOM → 2.0.21**~~ — **done** in `app/build.gradle`.
+13. ~~**AndroidX instrumented tests**~~ — **done** (`androidx.test:*` in `app/build.gradle`).
 
 ### Phase 3 — P2/P3 hygiene (third PR)
 
-14. Pin all third-party GitHub Actions (`Ilshidur/action-discord`, `addnab/docker-run-action`, `canonical/snapcraft-multiarch-action`, `snapcore/action-publish`, `geekyeggo/delete-artifact`, `signpath/github-action-submit-signing-request`) to explicit commit SHAs and add `dependabot.yml` or `renovate.json`.
+14. ~~Pin third-party GitHub Actions + add Dependabot~~ — **done** (`.github/workflows`, `.github/dependabot.yml`).
 15. ~~Migrate `misc/docker/build.Dockerfile` off CentOS 7~~ — **done** (Rocky Linux 9).
-16. Bump `misc/docker/lnx-aarch64.Dockerfile` `debian:11.8-slim` → `debian:12-slim`.
-17. Pin `misc/docker/android.Dockerfile` and `misc/docker/dedicated.Dockerfile` to image digests.
+16. ~~Bump `misc/docker/lnx-aarch64.Dockerfile` to Debian 12~~ — **done** (`debian:12.13-slim`).
+17. ~~Pin Android SDK and dedicated server base images~~ — **done** (Android digest; dedicated **12.13-slim**).
 
 ### Phase 4 — P4 cleanup
 

@@ -16,4 +16,4 @@ git am /path/to/sturmgeist/misc/patches/0001-libs-p0-curl-openssl-wolfssl.patch
 # or: git apply --check … then git apply
 ```
 
-After the change is merged on the **`libs`** remote, update the **`libs`** submodule pointer in this repository to that new commit.
+After the change is merged on the **`libs`** remote, in this repo run `cd libs && git fetch && git checkout <new-commit>` then commit the updated submodule pointer on your integration branch.

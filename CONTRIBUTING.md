@@ -1,6 +1,8 @@
 CONTRIBUTING
 ============
 
+This file applies to **this repository** ([Sturmgeist](https://github.com/timfox/sturmgeist)). Upstream ET: Legacy uses the same norms; for policy that only applies upstream, see [etlegacy/etlegacy `CONTRIBUTING.md`](https://github.com/etlegacy/etlegacy/blob/master/CONTRIBUTING.md).
+
 ET: Legacy development is a collaborative effort done in an open, transparent and friendly manner.
 Anyone is welcome to join our efforts!
 
