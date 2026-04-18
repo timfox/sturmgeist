@@ -54,7 +54,7 @@ You need **`pak0.pk3`** under `etmain/`. Some mods also need **`pak1.pk3`** / **
 
 ### Bundled libraries (`libs/`)
 
-If system packages are missing, use the **`etlegacy-libs`** submodule:
+If system packages are missing, fetch the **`libs`** submodule (bundled third-party sources):
 
 ```sh
 git submodule update --init --recursive

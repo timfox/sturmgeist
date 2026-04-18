@@ -1,15 +1,19 @@
-# Patches for upstream repositories
+# Patches for the **`libs`** submodule
 
-## `etlegacy-libs` (git submodule `libs/`)
+The **`libs/`** directory is a separate git repository (submodule in this tree). Patches here target that repo’s root **`CMakeLists.txt`** (bundled curl, OpenSSL, wolfSSL, and similar).
 
-**`0001-etlegacy-libs-p0-curl-openssl-wolfssl.patch`** bumps bundled **curl 8.12.1**, **OpenSSL 3.2.6**, and **wolfSSL 5.7.6-stable** in `CMakeLists.txt` (and removes unused wolfSSL patch wiring).
+## P0 — curl, OpenSSL, wolfSSL
 
-Apply inside a clone of [etlegacy/etlegacy-libs](https://github.com/etlegacy/etlegacy-libs) checked out at the same commit as this repo’s `libs` submodule, then open a PR upstream:
+**`0001-libs-p0-curl-openssl-wolfssl.patch`** bumps bundled **curl 8.12.1**, **OpenSSL 3.2.6**, and **wolfSSL 5.7.6-stable** (and removes unused wolfSSL patch wiring).
+
+Apply in a clone of the **same remote your `libs` submodule points at** (often [etlegacy/etlegacy-libs](https://github.com/etlegacy/etlegacy-libs)), checked out at the same commit as this repo’s **`libs`** submodule, then open a PR:
 
 ```sh
-cd etlegacy-libs
-git am /path/to/sturmgeist/misc/patches/0001-etlegacy-libs-p0-curl-openssl-wolfssl.patch
+git clone <your-libs-remote-url> libs-work
+cd libs-work
+git checkout <same-commit-as-this-repo/libs>
+git am /path/to/sturmgeist/misc/patches/0001-libs-p0-curl-openssl-wolfssl.patch
 # or: git apply --check … then git apply
 ```
 
-After the PR is merged, update the `libs` submodule pointer in this repo to the new `etlegacy-libs` commit.
+After the change is merged on the **`libs`** remote, update the **`libs`** submodule pointer in this repository to that new commit.

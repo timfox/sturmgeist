@@ -7,7 +7,7 @@
 #   - pip (pixi shadow) : pixi.toml dependencies are resolved via conda-forge
 #                         and are not tracked here; see SECURITY.md / docs/DEPENDENCY_AUDIT.md.
 #
-# The bundled C/C++ libraries under libs/ live in the etlegacy/etlegacy-libs
+# The bundled C/C++ libraries live in the libs/ git submodule (separate repo).
 # submodule and are version-bumped there, not in this repo.
 
 version: 2

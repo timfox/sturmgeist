@@ -52,7 +52,7 @@ pixi run upstream-fetch
 
 Formatting and workflow checks used in CI can be run locally with `pixi install` and `pixi run -e validation check-changes`. The default comparison branch is read from `.upstream-remote-branch` when that file exists (for example `origin/main` on forks that use `main` as the default branch).
 
-Bundled native library bumps that belong in the **`etlegacy/etlegacy-libs`** submodule may be prepared as mailbox patches under **`misc/patches/`** (see `misc/patches/README.md`) when this fork cannot push to that repository directly.
+Bundled native library bumps that belong in the **`libs`** submodule may be prepared as mailbox patches under **`misc/patches/`** (see `misc/patches/README.md`) when you cannot push to the **`libs`** remote directly.
 
 ## COVERITY SCAN (OPTIONAL)
 
