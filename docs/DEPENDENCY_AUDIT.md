@@ -12,7 +12,7 @@ GitHub Actions, Pixi, and Docker images under `misc/docker/`).
 
 | Phase | Status |
 |---|---|
-| 1 — P0 bundled C/C++ security (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **Partially prepared:** curl **8.12.1**, OpenSSL **3.2.6**, wolfSSL **5.7.6-stable** are captured in `misc/patches/0001-libs-p0-curl-openssl-wolfssl.patch` for the **`libs`** submodule; apply there and bump the submodule pointer. FreeType / libpng / cJSON remain vendored in **`libs`**. |
+| 1 — P0 bundled C/C++ security (FreeType, curl, OpenSSL, wolfSSL, libpng, cJSON) | **Partially prepared:** the checked-out **`libs`** submodule still lists curl **8.5.0**, OpenSSL **3.2.0**, wolfSSL **5.6.6** in `libs/CMakeLists.txt`. Target bumps (**8.12.1** / **3.2.6** / **5.7.6-stable**) are in `misc/patches/0001-libs-p0-curl-openssl-wolfssl.patch` — apply on the **`libs`** remote, merge, then bump the submodule pointer here. FreeType / libpng / cJSON remain vendored overlays in **`libs`**. |
 | 2 — Android hygiene | **Done:** AndroidX test stack, Kotlin BOM **2.0.21**, `TestETL` / manifest updates (see `app/build.gradle` and related paths). |
 | 3 — CI / Docker hygiene | **Done:** third-party and first-party Actions pinned to SHAs; Dependabot for actions, Gradle, Docker; Rocky **9** `lnx-build` image; **Debian 12.13-slim** aarch64 and dedicated images; Android SDK base image **digest**-pinned. |
 | 4 — Lua / Theora | **Deferred** — sources live in the **`libs`** submodule (see Phase 4 plan). |
@@ -24,9 +24,9 @@ GitHub Actions, Pixi, and Docker images under `misc/docker/`).
 | Priority | Dependency | Current | Recommended | Reason |
 |---|---|---|---|---|
 | P0 (security) | FreeType (`libs/freetype`) | 2.10.2 | 2.13.3+ | **CVE-2025-27363** (heap OOB write in TTF/variable fonts, CVSS 8.1, exploited in the wild). Affects ≤ 2.13.0. |
-| P0 (security) | libcurl (`libs/CMakeLists.txt`) | **8.12.1** | keep | Bundled tarball bumped from 8.5.0 (CVE fixes through 8.12.x). |
-| P0 (security) | OpenSSL (`libs/CMakeLists.txt`) | **3.2.6** | keep | Bundled tarball bumped from 3.2.0 on the 3.2 LTS line. |
-| P0 (security) | wolfSSL (`libs/CMakeLists.txt`) | **5.7.6-stable** | keep | Bundled tarball bumped from 5.6.6 (GitHub archive tag); dropped unused `WolfSSL.patch` / `find_package(Patch)` hook. |
+| P0 (security) | libcurl (`libs/CMakeLists.txt`) | **8.5.0** (submodule) | **8.12.1** | CVE backlog through 8.12.x; mailbox patch ready under `misc/patches/`. |
+| P0 (security) | OpenSSL (`libs/CMakeLists.txt`) | **3.2.0** (submodule) | **3.2.6** | Stay on 3.2.x LTS; patch bumps tarball + hash. |
+| P0 (security) | wolfSSL (`libs/CMakeLists.txt`) | **5.6.6** (submodule) | **5.7.6-stable** | CVE fixes; patch switches to GitHub archive + SHA256 and drops dead patch wiring. |
 | P0 (security) | libpng (`libs/libpng`) | 1.6.47 | 1.6.50+ | Latent read-beyond-end-of-malloc in `png_write_iCCP` fixed in 1.6.47, but 1.6.47 still predates the iCCP/iTXt fixes shipped in 1.6.48–1.6.50. |
 | P0 (security) | cJSON (`libs/cjson`) | 1.7.15 | 1.7.18 | CVE-2023-53154 (heap buffer over-read in `parse_string`), CVE-2024-31755 (NULL deref), and a heap-buffer-overflow fix all land in 1.7.18. |
 | P1 (stability) | libjpeg-turbo (`libs/jpegturbo`) | 2.0.4 | 3.0.x (latest 3.0.4) | 2.0.4 is EOL. CVE-2020-17541, CVE-2021-20205. 3.0.x is a drop-in API match; 2.1.x is an intermediate safe stop. |
@@ -64,7 +64,7 @@ A "high-confidence" upgrade is one where:
 2. The release notes contain no new soname bump or configure-flag rename that would flow into our `ExternalProject_Add` or patch files.
 3. The library is built via `ExternalProject_Add` from a tarball URL we control (so the upgrade is a one-line URL + hash change that CI can exercise end-to-end).
 
-All P0 items listed below are "high-confidence" by that rule.
+Most P0 items in §4 follow this rule; large vendored overlays (e.g. FreeType) deserve their own PR and extra CI time.
 
 ### What is NOT a high-confidence upgrade
 
@@ -79,9 +79,9 @@ All P0 items listed below are "high-confidence" by that rule.
 | Finding | Source (file and exact location) |
 |---|---|
 | FreeType 2.10.2 in tree | `libs/freetype/include/freetype/freetype.h` defines `FREETYPE_MAJOR 2 / MINOR 10 / PATCH 2`. |
-| libcurl 8.12.1 URL | `libs/CMakeLists.txt` → `CURL_DOWNLOAD_URL` … `curl-8_12_1/curl-8.12.1.tar.gz`. |
-| OpenSSL 3.2.6 URL | `libs/CMakeLists.txt` → two `ExternalProject_Add(bundled_openssl … openssl-3.2.6.tar.gz)` blocks (Win/Unix). |
-| wolfSSL 5.7.6-stable URL | `libs/CMakeLists.txt` → `URL https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.7.6-stable.tar.gz`. |
+| libcurl 8.5.0 URL (current submodule) | `libs/CMakeLists.txt` → `curl-8_5_0/curl-8.5.0.tar.gz`. After patch: `curl-8_12_1/curl-8.12.1.tar.gz`. |
+| OpenSSL 3.2.0 URL (current submodule) | `libs/CMakeLists.txt` → `openssl-3.2.0.tar.gz` (Win + Unix). After patch: **3.2.6**. |
+| wolfSSL 5.6.6 URL (current submodule) | `libs/CMakeLists.txt` → `v5.6.6-stable/wolfssl-5.6.6.tar.gz`. After patch: **`v5.7.6-stable` archive**. |
 | SDL2 2.30.9 URL | `libs/CMakeLists.txt` → `URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz`. |
 | libpng 1.6.47 in tree | `libs/libpng/png.h` → `PNG_LIBPNG_VER_STRING "1.6.47"`. |
 | cJSON 1.7.15 in tree | `libs/cjson/cJSON.h` → `CJSON_VERSION_MAJOR 1 / MINOR 7 / PATCH 15`. |
@@ -105,80 +105,21 @@ All P0 items listed below are "high-confidence" by that rule.
 
 ---
 
-## 3. Likely breaking changes per P0/P1 upgrade
+## 3. Upgrade notes (risk / confidence)
 
-### FreeType 2.10.2 → 2.13.3
+Short notes for the **remaining** work in §4. Items already merged (Android stack, CI pins, Docker bases) are omitted here.
 
-- No public-header breakage between 2.10 and 2.13. `FT_Init_FreeType`, `FT_Load_Char`, `FT_Get_Kerning`, `FT_Bitmap_Convert`, `FT_Get_Advance` (used by this repo in `src/renderercommon/tr_font.c`) are unchanged.
-- CMake build: `DISABLE_FORCE_DEBUG_POSTFIX=ON` (already passed from `libs/CMakeLists.txt`) is still accepted.
-- ABI: `libfreetype.a` filename unchanged on all platforms.
-- Risk: 2.11 added mandatory default-include of `zlib` / `bzip2` / `png` *detection*, but because we pass `-DCMAKE_DISABLE_FIND_PACKAGE_*` and `-DFT_WITH_*=OFF`, the existing flags cover it.
-- **Confidence:** high.
-
-### libcurl 8.12.1 (bundled)
-
-- We pass `-DCURL_DISABLE_*` flags that still exist in 8.12. GSSAPI is disabled with `-DCURL_USE_GSSAPI=OFF`.
-- `-DENABLE_MANUAL=OFF`, `-DBUILD_CURL_EXE=OFF`, `-DENABLE_ARES=OFF`, `-DCURL_WINDOWS_SSPI=OFF`, `-DCURL_USE_LIBPSL=OFF`, all still recognized through 8.12.
-- ABI: linked statically, soname not a concern.
-- Runtime API usage in `src/client/cl_main.c` (easy-perform), `src/qcommon/dl_main_curl.c`, and `src/server/sv_update.c` uses only `curl_easy_*` / `curl_multi_*` / `curl_slist_*` — all stable.
-- **Confidence:** high.
-
-### OpenSSL 3.2.6 (bundled)
-
-- Same 3.2.x series as before, patch release only.
-- Our `./Configure linux-x86_64 / darwin64-x86_64 / darwin64-arm64 / linux-x86 / linux-aarch64 / VC-WIN64 / VC-WIN32` targets are unchanged in 3.2.6.
-- NMake / make targets `install_sw` still exist.
-- **Confidence:** high.
-
-### wolfSSL 5.7.6-stable (bundled)
-
-- `WOLFSSL_CURL=yes` / `WOLFSSL_OPENSSLEXTRA=yes` / `WOLFSSL_ASIO=yes` / `WOLFSSL_CRL=yes` still present.
-- The previous `WolfSSL.patch` / `find_package(Patch)` path was unused in-tree; the upgrade uses the upstream GitHub archive tarball as-is.
-- **Confidence:** high for the CMake `ExternalProject` path (full CI still recommended).
-
-### libpng 1.6.47 → 1.6.50
-
-- Patch-level change inside 1.6.x. No API or ABI delta. Already uses our `-DPNG_SHARED=OFF -DPNG_STATIC=ON -DPNG_TOOLS=OFF -DPNG_TESTS=OFF`.
-- **Confidence:** high.
-
-### cJSON 1.7.15 → 1.7.18
-
-- `libs/cjson` is vendored sources (`cJSON.c`/`cJSON.h`), built by `BUNDLED_CJSON` block. Overwrite source files.
-- API unchanged. Consumer usages in `src/game/g_cmds.c`, `src/qcommon/json.c` rely on `cJSON_Parse`, `cJSON_GetObjectItem`, `cJSON_Print`, `cJSON_AddStringToObject` — all stable.
-- **Confidence:** high.
-
-### libjpeg-turbo 2.0.4 → 3.0.4
-
-- 3.0 dropped the non-TurboJPEG API subset `jpeg_mem_*` renaming; we use the static `turbojpeg`/`libjpeg` API through `tjInitCompress`/`tj3*`. Need to check `src/renderercommon/tr_image_jpg.c` for `tjEncodeJPEG` vs. new `tj3CompressFromYUV` signatures.
-- Safer intermediate: 2.1.5.1 (no API break from 2.0.x).
-- ABI: we link the static library, so soname drift does not matter.
-- **Confidence:** medium. Suggest a two-step: 2.0.4 → 2.1.5.1 (quick), then 2.1.5.1 → 3.0.4 (separate PR).
-
-### SQLite 3.36.0 → 3.46.x
-
-- Amalgamation drop-in. No API break. Only subtlety is that 3.37 made `STRICT` tables valid SQL syntax, and 3.45 changed the default of `SQLITE_DQS` to `0` (double-quoted string literals reject) — the mod's SQL in `src/game/sqlite_helpers.c` uses only single-quoted literals, so this is safe.
-- **Confidence:** high.
-
-### GLEW 2.1.0 → 2.2.0
-
-- No API break. We ship GLEW as vendored sources; the upgrade is an overwrite of `libs/glew/{src,include}` from the 2.2.0 tarball.
-- **Confidence:** high.
-
-### OpenAL-Soft 1.19.1 → 1.23.1
-
-- CMake variables used (`LIBTYPE=STATIC`, `ALSOFT_*=OFF`) all still exist.
-- Public header path (`AL/al.h`, `AL/alc.h`) unchanged. Consumer is `src/client/snd_openal.c` using only `alSourcef`, `alSourcei`, `alBufferData`, `alGenSources`, `alDeleteSources`, `alcOpenDevice`, `alcCloseDevice` — stable since 1.19.
-- 1.22 made `ALSOFT_BACKEND_SNDIO=OFF` redundant (still accepted). 1.23 dropped direct SSE2 unless `CMAKE_POLICY_VERSION_MINIMUM` is set — this repo already sets `CMAKE_POLICY_VERSION_MINIMUM` in `etl_setup_cmake_args`, so it works.
-- **Confidence:** high, but needs a CI smoke on all three desktop targets.
-
-### libtheora 1.1.1
-
-- Upstream is dead. The two known CVEs (both heap OOB reads) are triggered by malformed *input cinematics*. ET: Legacy ships signed cinematics shipped inside `pak0.pk3`; they are the only realistic consumer. Because we never consume untrusted Theora streams over the network, the CVE risk is limited to maliciously crafted demo files shipped by third parties.
-- Options:
-  1. **Keep 1.1.1** and add a one-line note in `SECURITY.md` about the untrusted-demo risk.
-  2. **Vendor one of the Debian / Xiph-master patch sets** that fixes the CVE without a full rebase.
-  3. **Drop Theora entirely** (`-DFEATURE_THEORA=OFF` already the Android path) and remove `src/client/cl_cin.c` Theora backend.
-- Recommendation: **option 2** for the next minor; option 3 is a long-horizon discussion.
+| Item | Notes |
+|------|--------|
+| **FreeType 2.10 → 2.13** | Public API used in `src/renderercommon/tr_font.c` is stable; bundled build uses `-DFT_WITH_*=OFF` / `CMAKE_DISABLE_FIND_PACKAGE_*` — **high** confidence. |
+| **curl → 8.12** (patch ready) | Same `ExternalProject` flags; use **`-DCURL_USE_GSSAPI=OFF`** on 8.12+. Static link — **high**. |
+| **OpenSSL 3.2.0 → 3.2.6** (patch ready) | Same `./Configure` targets and `install_sw`; **high**. |
+| **wolfSSL → 5.7.6** (patch ready) | CMake options preserved; full matrix CI after merge — **high** for the build path. |
+| **libpng / cJSON** | Vendored overlays; patch-level — **high**. |
+| **libjpeg-turbo → 3.x** | Prefer **2.1.x** first, then 3.x; review `src/renderercommon/tr_image_jpg.c` — **medium**. |
+| **SQLite amalgamation** | Drop-in; mod SQL uses single-quoted literals — **high**. |
+| **GLEW / OpenAL** | Vendored / static; OpenAL may need desktop CI smoke — **high** with CI. |
+| **libtheora 1.1.1** | Unmaintained; CVEs via malformed cinematics — options: document risk, vendor patches, or remove Theora path (see Phase 4). |
 
 ---
 
@@ -195,9 +136,9 @@ No patches, no build-system refactors, no API code touched.
 ### Phase 1 — P0 security (single PR, one commit per lib)
 
 1. **FreeType 2.10.2 → 2.13.3** — overlay `libs/freetype` from the upstream 2.13.3 tarball. (This is the biggest overlay. Consider making this its own PR if the submodule stores freetype there.)
-2. ~~**libcurl 8.5.0 → 8.12.1**~~ — **done** in `libs/CMakeLists.txt` (URL, MD5, `-DCURL_USE_GSSAPI=OFF`).
-3. ~~**OpenSSL 3.2.0 → 3.2.6**~~ — **done** in both `bundled_openssl` blocks.
-4. ~~**wolfSSL 5.6.6 → 5.7.6**~~ — **done** (`v5.7.6-stable` GitHub archive + SHA256; removed dead patch wiring).
+2. **libcurl 8.5.0 → 8.12.1** — **prepared** in `misc/patches/0001-libs-p0-curl-openssl-wolfssl.patch`; merge on **`libs`** then bump submodule.
+3. **OpenSSL 3.2.0 → 3.2.6** — same patch / same workflow.
+4. **wolfSSL 5.6.6 → 5.7.6-stable** — same patch (archive URL + SHA256; drops unused `Patch` / `WolfSSL.patch` wiring).
 5. **libpng 1.6.47 → 1.6.50** — overlay `libs/libpng`.
 6. **cJSON 1.7.15 → 1.7.18** — overwrite `libs/cjson/cJSON.{c,h}` and `libs/cjson/cJSON_Utils.{c,h}`.
 
@@ -239,11 +180,8 @@ For each phase, run:
 
 ---
 
-## 6. What I intentionally did NOT change yet
+## 6. Document maintenance
 
-- No `CMakeLists.txt` edits.
-- No `libs/*` version bumps.
-- No `app/build.gradle` edits.
-- No CI pinning.
-
-This document is the "plan before editing code" the task asked for. Each numbered item above is intended to become its own commit (or small PR when the diff is large, e.g. FreeType).
+- Keep **§1** and **§2** aligned with the **checked-out `libs` commit** (run `grep` on `libs/CMakeLists.txt` and headers after submodule bumps).
+- **§4** is the actionable checklist; prefer **one logical change per commit** (large overlays like FreeType may be their own PR).
+- When a phase is finished, strike it through in **§4** and adjust the **Rollup** table so readers are not misled.
