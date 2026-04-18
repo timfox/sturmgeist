@@ -34,6 +34,7 @@
  */
 
 #include "tr_local.h"
+#include "vulkan/vk_rhi.h"
 
 glconfig_t glConfig;
 qboolean   textureFilterAnisotropic = qfalse;
@@ -191,8 +192,7 @@ static void InitOpenGL(void)
 
 	if (glConfig.vidWidth == 0)
 	{
-		char  renderer_buffer[1024];
-		GLint temp;
+		char renderer_buffer[1024];
 
 		Com_Memset(&glConfig, 0, sizeof(glConfig));
 
@@ -203,17 +203,37 @@ static void InitOpenGL(void)
 
 		ri.GLimp_Init(&glConfig, glConfigString);
 
-		Q_strncpyz(renderer_buffer, glConfig.renderer_string, renderer_buffer);
+		Q_strncpyz(renderer_buffer, glConfig.renderer_string, sizeof(renderer_buffer));
 		Q_strlwr(renderer_buffer);
 
-		// OpenGL driver constants
-		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &temp);
-		glConfig.maxTextureSize = temp;
-
-		// stubbed or broken drivers may have reported 0...
-		if (glConfig.maxTextureSize <= 0)
+		if (VkRHI_IsActive())
 		{
-			glConfig.maxTextureSize = 0;
+			Q_strncpyz(glConfig.vendor_string, "Vulkan", sizeof(glConfig.vendor_string));
+			if (glConfig.renderer_string[0] == '\0')
+			{
+				Q_strncpyz(glConfig.renderer_string, "Vulkan RHI", sizeof(glConfig.renderer_string));
+			}
+			Com_sprintf(glConfig.version_string, sizeof(glConfig.version_string), "Vulkan 1.3 (SDL swapchain)");
+			Q_strncpyz(glConfig.shadingLanguageVersion, "SPIR-V", sizeof(glConfig.shadingLanguageVersion));
+			glConfig.glslMajorVersion = 1;
+			glConfig.glslMinorVersion = 0;
+			glConfig.contextCombined  = 130;
+			glConfig.maxTextureSize     = 16384;
+			glConfig.maxActiveTextures  = 1;
+			glConfig.extensions_string[0] = '\0';
+		}
+		else
+		{
+			GLint temp;
+
+			// OpenGL driver constants (legacy / fallback)
+			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &temp);
+			glConfig.maxTextureSize = temp;
+
+			if (glConfig.maxTextureSize <= 0)
+			{
+				glConfig.maxTextureSize = 0;
+			}
 		}
 
 		if (r_scale->value)
@@ -238,6 +258,11 @@ void GL_CheckErrors(void)
 {
 	unsigned int err;
 	char         s[64];
+
+	if (VkRHI_IsActive())
+	{
+		return;
+	}
 
 	if (r_ignoreGLErrors->integer)
 	{
@@ -931,6 +956,11 @@ void R_ScreenShot_f(void)
  */
 void GL_SetDefaultState(void)
 {
+	if (VkRHI_IsActive())
+	{
+		return;
+	}
+
 	glClearDepth(1.0);
 
 	glCullFace(GL_FRONT);
@@ -986,16 +1016,27 @@ void GfxInfo_f(void)
 		"fullscreen"
 	};
 
-	Ren_Print("GL_VENDOR: %s\n", glConfig.vendor_string);
-	Ren_Print("GL_RENDERER: %s\n", glConfig.renderer_string);
-	Ren_Print("GL_VERSION: %s\n", glConfig.version_string);
-	Ren_Print("GL_SHADING_LANGUAGE_VERSION: %s\n", glConfig.shadingLanguageVersion);
-
-	if (r_gfxInfo->integer > 0)
+	if (VkRHI_IsActive())
 	{
-		Ren_Print("GL_EXTENSIONS: ");
-		R_PrintLongString((const char *)glGetString(GL_EXTENSIONS));
-		Ren_Print("\n");
+		Ren_Print("API: Vulkan (native RHI)\n");
+		Ren_Print("VK_VENDOR: %s\n", glConfig.vendor_string);
+		Ren_Print("VK_RENDERER: %s\n", glConfig.renderer_string);
+		Ren_Print("VK_VERSION: %s\n", glConfig.version_string);
+		Ren_Print("VK_SHADERS: %s\n", glConfig.shadingLanguageVersion);
+	}
+	else
+	{
+		Ren_Print("GL_VENDOR: %s\n", glConfig.vendor_string);
+		Ren_Print("GL_RENDERER: %s\n", glConfig.renderer_string);
+		Ren_Print("GL_VERSION: %s\n", glConfig.version_string);
+		Ren_Print("GL_SHADING_LANGUAGE_VERSION: %s\n", glConfig.shadingLanguageVersion);
+
+		if (r_gfxInfo->integer > 0)
+		{
+			Ren_Print("GL_EXTENSIONS: ");
+			R_PrintLongString((const char *)glGetString(GL_EXTENSIONS));
+			Ren_Print("\n");
+		}
 	}
 
 	Ren_Print("GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize);
@@ -1024,8 +1065,16 @@ void GfxInfo_f(void)
 	Ren_Print("texturemode: %s\n", r_textureMode->string);
 	Ren_Print("picmip: %d\n", r_picMip->integer);
 	Ren_Print("texture bits: %d\n", r_textureBits->integer);
-	Ren_Print("multitexture: %s\n", enablestrings[glActiveTextureARB != 0]);
-	Ren_Print("compiled vertex arrays: %s\n", enablestrings[glLockArraysEXT != 0]);
+	if (VkRHI_IsActive())
+	{
+		Ren_Print("multitexture: %s\n", enablestrings[0]);
+		Ren_Print("compiled vertex arrays: %s\n", enablestrings[0]);
+	}
+	else
+	{
+		Ren_Print("multitexture: %s\n", enablestrings[glActiveTextureARB != 0]);
+		Ren_Print("compiled vertex arrays: %s\n", enablestrings[glLockArraysEXT != 0]);
+	}
 	Ren_Print("texenv add: %s\n", enablestrings[glConfig.textureEnvAddAvailable != 0]);
 	Ren_Print("compressed textures: %s\n", enablestrings[glConfig.textureCompression != TC_NONE]);
 

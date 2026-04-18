@@ -49,6 +49,13 @@ target_link_libraries(etl
 	os_libraries # Has to go after cURL and SDL
 )
 
+if(FEATURE_RENDERER_VULKAN AND RENDERER_DYNAMIC)
+	# SDL video path calls VkRHI_*; when the renderer is a separate module, link the same RHI into the client.
+	target_sources(etl PRIVATE ${VULKAN_RHI_SRC})
+	target_link_libraries(etl PRIVATE renderer_vulkan_libraries)
+	target_include_directories(etl PRIVATE "${CMAKE_SOURCE_DIR}/src/renderer_vk")
+endif()
+
 if(FEATURE_WINDOWS_CONSOLE AND WIN32)
 	set(ETL_COMPILE_DEF "USE_ICON;USE_WINDOWS_CONSOLE")
 else()
