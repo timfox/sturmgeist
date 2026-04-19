@@ -31,6 +31,11 @@ void VkRHI_Shutdown(void);
 void VkRHI_SwapFrame(void);
 
 /**
+ * @brief Block until the device is idle (no queued work). Safe when not initialized.
+ */
+void VkRHI_WaitIdle(void);
+
+/**
  * @brief Whether VkRHI_Init completed successfully.
  */
 qboolean VkRHI_IsActive(void);

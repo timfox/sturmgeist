@@ -8,6 +8,7 @@
  */
 
 #include "vk_rhi.h"
+#include "vk_rhi_formats.h"
 
 #include "../../qcommon/qcommon.h"
 
@@ -230,32 +231,6 @@ static uint32_t vk_find_queue(VkPhysicalDevice phys, VkSurfaceKHR surface, uint3
 
 	free(props);
 	return UINT32_MAX;
-}
-
-static VkSurfaceFormatKHR vk_choose_format(const VkSurfaceFormatKHR *formats, uint32_t n)
-{
-	uint32_t i;
-	for (i = 0; i < n; i++)
-	{
-		if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-		{
-			return formats[i];
-		}
-	}
-	return formats[0];
-}
-
-static VkPresentModeKHR vk_choose_present(const VkPresentModeKHR *modes, uint32_t n)
-{
-	uint32_t i;
-	for (i = 0; i < n; i++)
-	{
-		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
-		{
-			return modes[i];
-		}
-	}
-	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 static qboolean vk_pick_physical(VkSurfaceKHR surface)
@@ -545,13 +520,13 @@ qboolean VkRHI_Init(struct SDL_Window *window)
 	}
 	formats = (VkSurfaceFormatKHR *)malloc(sizeof(VkSurfaceFormatKHR) * fmtCount);
 	pfn_vkGetPhysicalDeviceSurfaceFormatsKHR(vk.physicalDevice, vk.surface, &fmtCount, formats);
-	surfaceFormat = vk_choose_format(formats, fmtCount);
+	surfaceFormat = VkRhi_ChooseSurfaceFormat(formats, fmtCount);
 	free(formats);
 
 	pfn_vkGetPhysicalDeviceSurfacePresentModesKHR(vk.physicalDevice, vk.surface, &modeCount, NULL);
 	modes = (VkPresentModeKHR *)malloc(sizeof(VkPresentModeKHR) * modeCount);
 	pfn_vkGetPhysicalDeviceSurfacePresentModesKHR(vk.physicalDevice, vk.surface, &modeCount, modes);
-	presentMode = vk_choose_present(modes, modeCount);
+	presentMode = VkRhi_ChoosePresentMode(modes, modeCount);
 	free(modes);
 
 	if (caps.currentExtent.width != UINT32_MAX)
@@ -771,6 +746,14 @@ qboolean VkRHI_Init(struct SDL_Window *window)
 	           (unsigned)vk.swapchainExtent.width, (unsigned)vk.swapchainExtent.height,
 	           (unsigned)vk.swapchainImageCount);
 	return qtrue;
+}
+
+void VkRHI_WaitIdle(void)
+{
+	if (vk.device && pfn_vkDeviceWaitIdle)
+	{
+		pfn_vkDeviceWaitIdle(vk.device);
+	}
 }
 
 void VkRHI_Shutdown(void)

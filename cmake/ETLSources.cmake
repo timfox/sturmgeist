@@ -217,6 +217,7 @@ FILE(GLOB RENDERER_VULKAN_FILES
 	"src/renderer_vk/vulkan/*.h"
 )
 list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi\\.c$")
+list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi_formats\\.c$")
 list(APPEND RENDERER_VULKAN_FILES "src/renderercommon/tr_common_vulkan.c")
 
 FILE(GLOB RENDERER_VULKAN_SHADERS
@@ -225,7 +226,10 @@ FILE(GLOB RENDERER_VULKAN_SHADERS
 )
 
 # Shared between the SDL client and the Vulkan renderer module (dynamic load).
-set(VULKAN_RHI_SRC "${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi.c")
+set(VULKAN_RHI_SRC
+	"${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi.c"
+	"${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi_formats.c"
+)
 
 FILE(GLOB IRC_CLIENT_FILES
 	"src/irc/htable.c"
