@@ -1313,7 +1313,6 @@ extern int CL_ScaledMilliseconds(void);
 void GLimp_EndFrame(void)
 {
 	// don't flip if drawing to front buffer
-	//FIXME: remove this nonesense
 	if (Q_stricmp(Cvar_VariableString("r_drawBuffer"), "GL_FRONT") != 0)
 	{
 #ifdef FEATURE_RENDERER_VULKAN

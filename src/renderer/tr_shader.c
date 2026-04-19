@@ -3653,7 +3653,7 @@ shader_t *R_GetShaderByHandle(qhandle_t hShader)
 {
 	if (hShader < 0)
 	{
-		Ren_Developer("R_GetShaderByHandle: out of range hShader '%d'\n", hShader); // FIXME name
+		Ren_Developer("R_GetShaderByHandle: out of range hShader '%d'\n", hShader);
 		return tr.defaultShader;
 	}
 	if (hShader >= tr.numShaders)

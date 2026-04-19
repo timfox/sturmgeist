@@ -2927,7 +2927,7 @@ void Item_Text_Paint(itemDef_t *item)
 
 	Item_TextColor(item, &color);
 
-	//FIXME: this is a fucking mess
+	// Outlined/shadowed text styles: legacy block kept for reference (see commented code below).
 	/*
 	adjust = 0;
 	if (item->textStyle == ITEM_TEXTSTYLE_OUTLINED || item->textStyle == ITEM_TEXTSTYLE_OUTLINESHADOWED) {

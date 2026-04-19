@@ -2414,7 +2414,7 @@ void R_CacheModelFree(void *ptr)
 	else
 	{
 		// if r_cache 0, this is never supposed to get called anyway
-		Ren_Print("FIXME: unexpected R_CacheModelFree call (r_cache 0)\n");
+		Ren_Print("Warning: unexpected R_CacheModelFree call (r_cache 0)\n");
 	}
 }
 
