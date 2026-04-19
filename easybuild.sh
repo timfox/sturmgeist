@@ -529,7 +529,7 @@ generate_configuration() {
     else
         # If we are using the authentication system, default to the bundled curl for now (see bellow)
         # On macos the system curl cause the request to fail when swapping get and post requests sometimes
-        # TODO: recheck the curl failure on macos after a system upgrade later 20204
+        # Revisit bundled curl on macOS if system curl + auth misbehaves after OS upgrades.
         if [ "$FEATURE_AUTH" -eq 1 ]; then
             einfo "Authentication is enabled, defaulting to bundled curl"
             BUNDLED_CURL=${BUNDLED_CURL:-1}
@@ -908,7 +908,6 @@ run_package() {
     # check_exit "make package"
     # calling cpack directly we are not checking the build output anymore
     check_exit "cpack"
-    # TODO: detect if osx and generate a package and a dmg installer
     if [ "${PLATFORMSYS}" == "Mac OS X" ] || [ "${PLATFORMSYS}" == "macOS" ]; then
         create_osx_dmg
     fi
@@ -929,8 +928,7 @@ run_watch_progress() {
     printf "\033c"
     cmake --build .
     printf "\033c"
-    # Just a TODO thing to actually implement some tests at some point
-    command echo "Run tests.."
+    command echo "Build finished (no automated tests in watch path)."
     set +e
     exit 0
 }
