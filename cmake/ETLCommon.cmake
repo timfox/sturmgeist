@@ -44,7 +44,7 @@ else()
 	SET(VSTUDIO 0)
 endif()
 
-# FIXME: remove this crap
+# Visual Studio vs standalone MSVC/Ninja generators
 if(NMAKE_BUILD OR MSVC)
 	set(VS_BUILD 1)
 else()

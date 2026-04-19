@@ -2,7 +2,7 @@
 # CPack
 #-----------------------------------------------------------------
 
-# TODO: move this to include(EtlegacyCPack)
+# CPack configuration (could be split into include(EtlegacyCPack) later)
 # CPack general configuration
 set(CPACK_PACKAGE_NAME                "etlegacy")
 set(CPACK_BUNDLE_NAME                 "etlegacy")
@@ -14,9 +14,9 @@ set(CPACK_BUNDLE_PLIST                "${CMAKE_SOURCE_DIR}/misc/Info.plist")
 set(CPACK_PACKAGE_VENDOR              "ET: Legacy")
 set(CPACK_PACKAGE_CONTACT             "mail@etlegacy.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ET: Legacy is an online FPS game compatible with Wolfenstein: Enemy Territory 2.60b.")
-set(CPACK_PACKAGE_DESCRIPTION         ${CPACK_PACKAGE_DESCRIPTION_SUMMARY}) # TODO: expand
+set(CPACK_PACKAGE_DESCRIPTION         ${CPACK_PACKAGE_DESCRIPTION_SUMMARY}) # Long description could diverge from summary if needed
 set(CPACK_PACKAGE_DESCRIPTION_FILE    "${CMAKE_SOURCE_DIR}/docs/INSTALL.txt")
-#set(CPACK_RESOURCE_FILE_LICENSE       "${CMAKE_SOURCE_DIR}/COPYING.txt") # FIXME: breaks bundle generator
+#set(CPACK_RESOURCE_FILE_LICENSE       "${CMAKE_SOURCE_DIR}/COPYING.txt") # Note: breaks macOS bundle generator when enabled globally
 set(CPACK_PACKAGE_VERSION_MAJOR       ${ETLEGACY_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR       ${ETLEGACY_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH       ${ETLEGACY_VERSION_PATCH})
@@ -47,7 +47,7 @@ if(UNIX)
 		set(CPACK_GENERATOR "TGZ" "STGZ")
 	endif()
 	set(CPACK_PACKAGE_VERSION ${ETL_CMAKE_VERSION})
-	set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.txt") # FIXME: move above
+	set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.txt") # Unix TGZ/STGZ: ship COPYING with the archive
 endif()
 
 if(APPLE)
