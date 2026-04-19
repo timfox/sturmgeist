@@ -218,6 +218,8 @@ FILE(GLOB RENDERER_VULKAN_FILES
 )
 list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi\\.c$")
 list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi_formats\\.c$")
+list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi_swapchain\\.c$")
+list(FILTER RENDERER_VULKAN_FILES EXCLUDE REGEX "vk_rhi_raytrace\\.c$")
 list(APPEND RENDERER_VULKAN_FILES "src/renderercommon/tr_common_vulkan.c")
 
 FILE(GLOB RENDERER_VULKAN_SHADERS
@@ -229,6 +231,8 @@ FILE(GLOB RENDERER_VULKAN_SHADERS
 set(VULKAN_RHI_SRC
 	"${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi.c"
 	"${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi_formats.c"
+	"${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi_swapchain.c"
+	"${CMAKE_SOURCE_DIR}/src/renderer_vk/vulkan/vk_rhi_raytrace.c"
 )
 
 FILE(GLOB IRC_CLIENT_FILES
