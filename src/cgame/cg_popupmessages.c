@@ -501,7 +501,7 @@ void CG_AddPMItem(popupMessageType_t type, const char *message, const char *mess
 		CG_AddPMItemEx(type, message, message2, shader, weaponShader, scaleShader, color, i);
 	}
 
-	trap_Print(va("%s\n", message)); // FIXME: translate this (does it makes sense?)
+	trap_Print(va("%s\n", message)); // Note: message is shown as-is; add i18n here if popup strings should be translated.
 }
 
 /**

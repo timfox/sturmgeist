@@ -5756,7 +5756,7 @@ shader_t *R_FindShader(const char *name, shaderType_t type, qboolean mipRawImage
 
 		if (i == 1 && shader.type != SHADER_2D && shader.type != SHADER_LIGHT && (stages[0].type == ST_COLORMAP || stages[0].type == ST_DIFFUSEMAP) && !shader.noPicMip)
 		{
-			// Note/FIXME: image file name has to be including extension, we use tga - make this more generic one day
+			// Note: image file name must include extension (e.g. .tga); could be generalized later.
 			// ETL: suffix for normalmaps is '_n'
 			tmpImage = R_FindImageFile(va("%s_n.tga", strippedName), !shader.noPicMip ? IF_NONE : IF_NOPICMIP, !shader.noPicMip ? FT_DEFAULT : FT_LINEAR, !shader.noPicMip ? WT_REPEAT : WT_EDGE_CLAMP, shader.name);
 			if (tmpImage)
@@ -5773,7 +5773,7 @@ shader_t *R_FindShader(const char *name, shaderType_t type, qboolean mipRawImage
 				Ren_Developer("R_FindShader Warning: Normalmap image '%s' type %i not found.\n", va("%s_n.tga", strippedName), shader.type);
 			}
 
-			// Note/FIXME: image file name has to be including extension, we use tga - make this more generic one day
+			// Note: image file name must include extension (e.g. .tga); could be generalized later.
 			// ETL: suffix for specularmaps is '_r'
 			tmpImage = R_FindImageFile(va("%s_r.tga", strippedName), !shader.noPicMip ? IF_NONE : IF_NOPICMIP, !shader.noPicMip ? FT_DEFAULT : FT_LINEAR, !shader.noPicMip ? WT_REPEAT : WT_EDGE_CLAMP, shader.name);
 			if (tmpImage)

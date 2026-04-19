@@ -89,7 +89,7 @@ Output a backspace
 
 NOTE: it seems on some terminals just sending '\b' is not enough so instead we
 send "\b \b"
-(FIXME there may be a way to find out if '\b' alone would work though)
+(There may be a way to detect whether '\b' alone would work on the current TTY.)
 ==================
 */
 static void CON_Back(void)
@@ -146,7 +146,7 @@ static void CON_Hide(void)
 CON_Show
 
 Show the current line
-FIXME need to position the cursor if needed?
+Note: cursor positioning may need refinement for some terminals.
 ==================
 */
 static void CON_Show(void)
