@@ -255,6 +255,8 @@ jobs:
       CI_ETL_DESCRIBE: ${{needs.pre-build.outputs.describe}}
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dkotlin.incremental=false
     container:
       image: etlegacy/android-build
     steps:
@@ -268,13 +270,17 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
+          cache: "gradle"
+          cache-dependency-path: |
+            **/*.gradle*
+            app/libs/joystick/**/*.gradle*
 
       - name: Build JoyStick Dependency
         working-directory: ./app/libs/joystick
         run: |
-          ./gradlew clean               --stacktrace --info
-          ./gradlew assembleRelease     --stacktrace --info
-          ./gradlew publishToMavenLocal --stacktrace --info
+          ./gradlew --no-daemon clean               --stacktrace --warning-mode all
+          ./gradlew --no-daemon assembleRelease     --stacktrace --warning-mode all
+          ./gradlew --no-daemon publishToMavenLocal --stacktrace --warning-mode all
 
       - name: Upload JoyStick Dependency Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -287,23 +293,30 @@ jobs:
         if: github.repository == 'etlegacy/etlegacy'
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          ./gradlew clean assembleRelease --stacktrace --info
+          ./gradlew --no-daemon lintDebug testDebugUnitTest --stacktrace --warning-mode all
+          ./gradlew --no-daemon clean assembleRelease --stacktrace --warning-mode all
           ls -R
       - name: Build Debug
         if: github.repository != 'etlegacy/etlegacy'
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          ./gradlew clean assembleDebug --stacktrace --info
+          ./gradlew --no-daemon lintDebug testDebugUnitTest --stacktrace --warning-mode all
+          ./gradlew --no-daemon clean assembleDebug --stacktrace --warning-mode all
           ls -R
 
       - name: Prepare artifacts
         run: |
-          mv ./app/build/intermediates/merged_native_libs/*/mergeReleaseNativeLibs/out/lib/arm64-v8a/libcgame*.so .
-          mv ./app/build/intermediates/merged_native_libs/*/mergeReleaseNativeLibs/out/lib/arm64-v8a/libui*.so .
-          mv ./app/build/intermediates/merged_native_libs/*/mergeReleaseNativeLibs/out/lib/x86/libcgame*.so .
-          mv ./app/build/intermediates/merged_native_libs/*/mergeReleaseNativeLibs/out/lib/x86/libui*.so .
-          mv ./app/build/intermediates/merged_native_libs/*/mergeReleaseNativeLibs/out/lib/x86_64/libcgame*.so .
-          mv ./app/build/intermediates/merged_native_libs/*/mergeReleaseNativeLibs/out/lib/x86_64/libui*.so .
+          set -euo pipefail
+          for arch in arm64-v8a x86 x86_64; do
+            for kind in libcgame libui; do
+              f="$(find app/build/intermediates/merged_native_libs -path "*/out/lib/${arch}/${kind}*.so" -print -quit)"
+              if [[ -z "${f}" ]]; then
+                echo "Missing merged native lib ${kind}*.so for ${arch}" >&2
+                exit 1
+              fi
+              mv "${f}" .
+            done
+          done
           ls -ltrah
 
       - name: Upload arm64-v8a
@@ -750,6 +763,8 @@ jobs:
       CI_ETL_DESCRIBE: ${{needs.pre-build.outputs.describe}}
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dkotlin.incremental=false
     needs: [ pre-build, mod-merger ]
     container:
       image: etlegacy/android-build
@@ -757,12 +772,18 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup JDK
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
           java-version: "17"
+          cache: "gradle"
+          cache-dependency-path: |
+            **/*.gradle*
+            app/libs/joystick/**/*.gradle*
 
       - name: Download JoyStick Dependency Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -783,18 +804,21 @@ jobs:
         if: github.repository == 'etlegacy/etlegacy'
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          ./gradlew clean assembleRelease --stacktrace --info
+          ./gradlew --no-daemon lintDebug testDebugUnitTest --stacktrace --warning-mode all
+          ./gradlew --no-daemon clean assembleRelease --stacktrace --warning-mode all
           ls -R
       - name: Build Debug and Generate Package
         if: github.repository != 'etlegacy/etlegacy'
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          ./gradlew clean assembleDebug --stacktrace --info
+          ./gradlew --no-daemon lintDebug testDebugUnitTest --stacktrace --warning-mode all
+          ./gradlew --no-daemon clean assembleDebug --stacktrace --warning-mode all
           ls -R
 
       - name: Rename APK
         run: |
-          for FILE in ./app/build/outputs/apk/*/*; do mv "$FILE" "${FILE%-*}.apk"; done
+          shopt -s nullglob globstar
+          for FILE in ./app/build/outputs/apk/**/*.apk; do mv "$FILE" "${FILE%-*}.apk"; done
           ls -R app/build/outputs/apk
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

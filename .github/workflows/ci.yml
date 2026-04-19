@@ -250,6 +250,9 @@ jobs:
     env:
       CI_ETL_DESCRIBE: ${{ needs.pre-build.outputs.describe }}
       CI_ETL_TAG: ${{ needs.pre-build.outputs.tag }}
+      # Stable native / APK outputs in CI logs
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dkotlin.incremental=false
     needs: [pre-build]
     container:
       image: etlegacy/android-build
@@ -257,29 +260,41 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: true
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup JDK
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
           java-version: "17"
+          cache: "gradle"
+          cache-dependency-path: |
+            **/*.gradle*
+            app/libs/joystick/**/*.gradle*
 
       - name: Build JoyStick Dependency
         working-directory: ./app/libs/joystick
         run: |
-          ./gradlew clean               --stacktrace --info
-          ./gradlew assembleRelease     --stacktrace --info
-          ./gradlew publishToMavenLocal --stacktrace --info
+          ./gradlew --no-daemon clean               --stacktrace --warning-mode all
+          ./gradlew --no-daemon assembleRelease     --stacktrace --warning-mode all
+          ./gradlew --no-daemon publishToMavenLocal --stacktrace --warning-mode all
+
+      - name: Lint and unit tests (app)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ./gradlew --no-daemon lintDebug testDebugUnitTest --stacktrace --warning-mode all
 
       - name: Build and Generate Package
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          ./gradlew clean assembleDebug
+          ./gradlew --no-daemon clean assembleDebug --stacktrace --warning-mode all
           ls -R
 
       - name: Rename APK
         run: |
-          for FILE in ./app/build/outputs/apk/debug/*; do mv "$FILE" "${FILE%-*}.apk"; done
+          shopt -s nullglob
+          for FILE in ./app/build/outputs/apk/debug/*.apk; do mv "$FILE" "${FILE%-*}.apk"; done
           ls app/build/outputs/apk/debug
 
   check-compiler-warnings:
