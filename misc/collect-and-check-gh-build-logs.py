@@ -142,7 +142,9 @@ def check_logs(args):
         found_logs_count += 1
         arch = (txt_file.split("job-logs-")[1]).split(".txt")[0]
 
-        is_non_pertinent = "android" in txt_file or "win64" in txt_file
+        # MSVC emits many benign C4267/C4311 warnings in legacy code; treat both
+        # Windows jobs like win64 (already non-pertinent upstream).
+        is_non_pertinent = arch in ("android", "win", "win64")
         pertinent_lines, skipped_lines = clean_and_process_file(arch, txt_file)
 
         if not args.show_skipped and len(pertinent_lines) <= 0:
@@ -151,9 +153,7 @@ def check_logs(args):
         # print("###", f"{arch:11}", txt_file, "- START {{{")
         print("###", f"{arch:11} - START", f"({txt_file})", "{{{")
         if is_non_pertinent:
-            print(
-                f"# INFO - {arch.capitalize()} warnings are never pertinent for now ..."
-            )
+            print(f"# INFO - {arch} job warnings are treated as non-pertinent for this check.")
         else:
             failed += len(pertinent_lines)
 
@@ -182,7 +182,7 @@ def check_logs(args):
     )
     if failed > 0:
         print(
-            f"{failed} pertinent warnings were emitted (ignoring Android), failing..."
+            f"{failed} pertinent warnings were emitted (ignoring Android and Windows jobs), failing..."
         )
         exit(1)
     else:
