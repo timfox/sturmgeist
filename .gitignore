@@ -91,6 +91,10 @@ app/.cxx
 app/build/
 build/
 gradle/
+# Vendored JoyStick library ships its own Gradle wrapper; root `gradle/` would hide it
+!/app/libs/joystick/gradle/
+!/app/libs/joystick/gradle/wrapper/
+!/app/libs/joystick/gradle/wrapper/gradle-wrapper.properties
 /local.properties
 
 # Package Managers
