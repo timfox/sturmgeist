@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/timfox/sturmgeist/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/timfox/sturmgeist/actions/workflows/ci.yml?query=branch%3Amain)
 [![ETLBuild](https://github.com/timfox/sturmgeist/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/timfox/sturmgeist/actions/workflows/build.yml?query=branch%3Amain)
-[![Snap](https://snapcraft.io/etlegacy/badge.svg)](https://snapcraft.io/etlegacy)
+[![Snap](https://snapcraft.io/etlegacy/badge.svg)](https://snapcraft.io/etlegacy) (upstream package; see [Snap](#snap))
 [![Coverity](https://scan.coverity.com/projects/1160/badge.svg)](https://scan.coverity.com/projects/1160)
 [![Discord](https://img.shields.io/discord/260750790203932672.svg?logo=discord)](https://discord.gg/UBAZFys)
 
@@ -99,6 +99,12 @@ pixi run upstream-fetch
 ```
 
 See [Development helpers](#development-helpers) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## CI and workflows
+
+GitHub Actions on **`main`** / **`master`** run **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** (Linux containers, macOS, Windows, Android, optional log checks). The **Android** job uses **JDK 21** in CI, and the vendored **JoyStick** library uses the same **Gradle 8.13** wrapper as the root app so Gradle can instrument current dependency bytecode (for example BouncyCastle multi-release JARs). **[`build.yml`](.github/workflows/build.yml)** (ETLBuild) runs on tagged releases, a weekly schedule, and manual dispatch. **[`snapcraft.yml`](.github/workflows/snapcraft.yml)** builds the upstream **[etlegacy-snap](https://github.com/etlegacy/etlegacy-snap)** tree after ETLBuild completes; it expects **`SNAPCRAFT_STORE_CREDENTIALS`** where publishing is desired.
+
+Forks without **`LEGACY_CI_WEBHOOK`** still get a full CI signal; the optional Discord notify step is skipped when that secret is unset. The **`check-compiler-warnings`** job scans native build logs for new compiler warnings in game code; **Android** and **Windows** (`win` / `win64`) logs are treated as informational only (see `misc/collect-and-check-gh-build-logs.py`).
 
 ## Development helpers
 
@@ -204,7 +210,7 @@ OpenGL and GLES are supported. See **`easybuild.sh`** (`RPI` section): e.g. `./e
 
 ### Snap
 
-Snap packaging: [etlegacy-snap](https://github.com/etlegacy/etlegacy-snap).
+Official ET: Legacy snap sources live in **[etlegacy/etlegacy-snap](https://github.com/etlegacy/etlegacy-snap)** ([snapcraft.io/etlegacy](https://snapcraft.io/etlegacy)). This fork’s workflow checks out that repo to build; it is not a fork-specific snap name unless you maintain your own branch and store credentials.
 
 ## License
 

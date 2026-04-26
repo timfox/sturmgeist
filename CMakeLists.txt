@@ -151,7 +151,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ${CMAKE_TARGETS_FOLDER})
 
 # Set language levels (C++17: constexpr-if, nested namespace, structured bindings;
-# still avoids C++20 modules/concepts for older toolchains in long-tail CI images)
+# still avoids C++20 modules/concepts for older toolchains in long-tail CI images).
+# The qagame Omni-bot bridge is pinned to C++11 in cmake/ETLBuildMod.cmake so
+# etlegacy/lnx-build CI images can still configure when FEATURE_OMNIBOT is on.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

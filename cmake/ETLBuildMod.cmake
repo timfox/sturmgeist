@@ -107,6 +107,17 @@ if(BUILD_SERVER_MOD)
 		RUNTIME_OUTPUT_DIRECTORY_RELEASE "${MODNAME}"
 	)
 	target_compile_definitions(qagame PRIVATE GAMEDLL=1 MODLIB=1)
+
+	# Omni-bot adds C++ sources to qagame; etlegacy/lnx-build CI images ship an older
+	# g++ where CMake does not enable C++17 for this target. Pin C++11 for qagame only.
+	if(FEATURE_OMNIBOT)
+		set_target_properties(qagame
+			PROPERTIES
+			CXX_STANDARD 11
+			CXX_STANDARD_REQUIRED ON
+			CXX_EXTENSIONS OFF
+		)
+	endif()
 endif()
 
 #

@@ -269,7 +269,7 @@ jobs:
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
           cache: "gradle"
           cache-dependency-path: |
             **/*.gradle*
@@ -358,7 +358,17 @@ jobs:
   # This step also generates the final packages for 32 bit lnx.
   mod-merger:
     runs-on: ubuntu-24.04
-    needs: [ pre-build, lnx64-mod, lnx32-mod, osx-mod, win-mod, win64-mod, lnx-aarch64-mod, android-mod ]
+    needs:
+      [
+        pre-build,
+        lnx64-mod,
+        lnx32-mod,
+        osx-mod,
+        win-mod,
+        win64-mod,
+        lnx-aarch64-mod,
+        android-mod,
+      ]
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -416,7 +426,7 @@ jobs:
   # Generate the final packages for Lnx, macOS, Windows and Android
   lnx64:
     runs-on: ubuntu-24.04
-    needs: [ pre-build, mod-merger ]
+    needs: [pre-build, mod-merger]
     env:
       CI_ETL_DESCRIBE: ${{needs.pre-build.outputs.describe}}
       CI_ETL_TAG: ${{needs.pre-build.outputs.tag}}
@@ -765,7 +775,7 @@ jobs:
       CI_ETL_UID: ${{needs.pre-build.outputs.uid}}
       ANDROID_SDK_ROOT: /opt/android-sdk
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dkotlin.incremental=false
-    needs: [ pre-build, mod-merger ]
+    needs: [pre-build, mod-merger]
     container:
       image: etlegacy/android-build
     steps:
@@ -779,7 +789,7 @@ jobs:
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
           cache: "gradle"
           cache-dependency-path: |
             **/*.gradle*
@@ -816,6 +826,7 @@ jobs:
           ls -R
 
       - name: Rename APK
+        shell: bash
         run: |
           shopt -s nullglob globstar
           for FILE in ./app/build/outputs/apk/**/*.apk; do mv "$FILE" "${FILE%-*}.apk"; done

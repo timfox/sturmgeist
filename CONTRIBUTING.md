@@ -54,6 +54,8 @@ pixi run upstream-fetch
 
 Formatting and workflow checks used in CI can be run locally with `pixi install` and `pixi run -e validation check-changes`. The default comparison branch is read from `.upstream-remote-branch` when that file exists (for example `origin/main` on forks that use `main` as the default branch).
 
+Continuous integration is documented briefly in **[README.md](README.md)** under **CI and workflows** (main workflow, ETLBuild, Snap, optional Discord webhook).
+
 Bundled native library bumps that belong in the **`libs`** submodule may be prepared as mailbox patches under **`misc/patches/`** (see `misc/patches/README.md`) when you cannot push to the **`libs`** remote directly.
 
 ## COVERITY SCAN (OPTIONAL)
@@ -64,7 +66,7 @@ Optional **variable** `COVERITY_PROJECT` (repository **Actions → Variables**) 
 
 ## ANDROID JOYSTICK (VENDORED)
 
-The on-screen joystick library is kept under **`app/libs/joystick/`** as normal project files (not a git submodule). When upgrading Android Gradle Plugin or the library itself, keep **`app/libs/joystick/build.gradle`** in step with the root **`build.gradle`** `classpath` version. Optional: compare with [etlegacy/JoyStick](https://github.com/etlegacy/JoyStick) upstream and port changes manually.
+The on-screen joystick library is kept under **`app/libs/joystick/`** as normal project files (not a git submodule). **`app/libs/joystick/gradle/wrapper/`** (`gradle-wrapper.properties` and **`gradle-wrapper.jar`**) must remain committed (the repo-wide **`gradle/`** ignore rule is negated for that path so CI can run `./gradlew`). Keep the JoyStick **Gradle distribution URL** in step with the root project’s **`gradle/wrapper/gradle-wrapper.properties`** so dependency bytecode matches the wrapper’s ASM. When upgrading Android Gradle Plugin or the library itself, keep **`app/libs/joystick/build.gradle`** in step with the root **`build.gradle`** `classpath` version. Optional: compare with [etlegacy/JoyStick](https://github.com/etlegacy/JoyStick) upstream and port changes manually.
 
 ## COMMUNICATION
 
