@@ -66,7 +66,7 @@ Optional **variable** `COVERITY_PROJECT` (repository **Actions → Variables**) 
 
 ## ANDROID JOYSTICK (VENDORED)
 
-The on-screen joystick library is kept under **`app/libs/joystick/`** as normal project files (not a git submodule). **`app/libs/joystick/gradle/wrapper/gradle-wrapper.properties`** must remain committed (the repo-wide **`gradle/`** ignore rule is negated for that path so CI can run `./gradlew`). When upgrading Android Gradle Plugin or the library itself, keep **`app/libs/joystick/build.gradle`** in step with the root **`build.gradle`** `classpath` version. Optional: compare with [etlegacy/JoyStick](https://github.com/etlegacy/JoyStick) upstream and port changes manually.
+The on-screen joystick library is kept under **`app/libs/joystick/`** as normal project files (not a git submodule). **`app/libs/joystick/gradle/wrapper/`** (`gradle-wrapper.properties` and **`gradle-wrapper.jar`**) must remain committed (the repo-wide **`gradle/`** ignore rule is negated for that path so CI can run `./gradlew`). Keep the JoyStick **Gradle distribution URL** in step with the root project’s **`gradle/wrapper/gradle-wrapper.properties`** so dependency bytecode matches the wrapper’s ASM. When upgrading Android Gradle Plugin or the library itself, keep **`app/libs/joystick/build.gradle`** in step with the root **`build.gradle`** `classpath` version. Optional: compare with [etlegacy/JoyStick](https://github.com/etlegacy/JoyStick) upstream and port changes manually.
 
 ## COMMUNICATION
 
