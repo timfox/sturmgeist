@@ -267,7 +267,8 @@ jobs:
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          # JDK 21+: Gradle 8.x must instrument deps with Java 21 bytecode (e.g. BouncyCastle 1.79)
+          java-version: "21"
           cache: "gradle"
           cache-dependency-path: |
             **/*.gradle*

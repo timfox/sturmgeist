@@ -102,7 +102,7 @@ See [Development helpers](#development-helpers) and [CONTRIBUTING.md](CONTRIBUTI
 
 ## CI and workflows
 
-GitHub Actions on **`main`** / **`master`** run **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** (Linux containers, macOS, Windows, Android, optional log checks). **[`build.yml`](.github/workflows/build.yml)** (ETLBuild) runs on tagged releases, a weekly schedule, and manual dispatch. **[`snapcraft.yml`](.github/workflows/snapcraft.yml)** builds the upstream **[etlegacy-snap](https://github.com/etlegacy/etlegacy-snap)** tree after ETLBuild completes; it expects **`SNAPCRAFT_STORE_CREDENTIALS`** where publishing is desired.
+GitHub Actions on **`main`** / **`master`** run **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** (Linux containers, macOS, Windows, Android, optional log checks). The **Android** job uses **JDK 21** in CI so Gradle can handle current dependency bytecode (AGP 8.13 pulls libraries with multi-release JARs). **[`build.yml`](.github/workflows/build.yml)** (ETLBuild) runs on tagged releases, a weekly schedule, and manual dispatch. **[`snapcraft.yml`](.github/workflows/snapcraft.yml)** builds the upstream **[etlegacy-snap](https://github.com/etlegacy/etlegacy-snap)** tree after ETLBuild completes; it expects **`SNAPCRAFT_STORE_CREDENTIALS`** where publishing is desired.
 
 Forks without **`LEGACY_CI_WEBHOOK`** still get a full CI signal; the optional Discord notify step is skipped when that secret is unset.
 
