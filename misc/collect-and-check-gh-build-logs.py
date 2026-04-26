@@ -7,7 +7,6 @@ import re
 import requests
 import sys
 
-
 EXPLICITLY_IGNORED_WARNINGS = {
     "android": [],
     "lnx-aarch64": [
@@ -153,7 +152,9 @@ def check_logs(args):
         # print("###", f"{arch:11}", txt_file, "- START {{{")
         print("###", f"{arch:11} - START", f"({txt_file})", "{{{")
         if is_non_pertinent:
-            print(f"# INFO - {arch} job warnings are treated as non-pertinent for this check.")
+            print(
+                f"# INFO - {arch} job warnings are treated as non-pertinent for this check."
+            )
         else:
             failed += len(pertinent_lines)
 
