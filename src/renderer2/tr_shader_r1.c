@@ -114,11 +114,6 @@ qboolean ParseShaderR1(char *_text)
 
 	while (1)
 	{
-		if (R_ParseEtlDirective(text, &shader.maxPicMip, shader.name, qtrue))
-		{
-			continue;
-		}
-
 		token = COM_ParseExt2(text, qtrue);
 		if (!token[0])
 		{
@@ -993,7 +988,7 @@ int ScanAndLoadShaderFilesR1()
 		COM_BeginParseSession(filename);
 
 		Ren_Developer("...loading '%s'\n", filename);
-		summand = ri.FS_ReadFile(filename, (void **)&buffers[i]);
+		summand       = ri.FS_ReadFile(filename, (void **)&buffers[i]);
 		bufferslen[i] = summand;
 
 		if (!buffers[i])
