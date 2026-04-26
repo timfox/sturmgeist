@@ -293,6 +293,7 @@ jobs:
           ls -R
 
       - name: Rename APK
+        shell: bash
         run: |
           shopt -s nullglob
           for FILE in ./app/build/outputs/apk/debug/*.apk; do mv "$FILE" "${FILE%-*}.apk"; done

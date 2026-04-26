@@ -826,6 +826,7 @@ jobs:
           ls -R
 
       - name: Rename APK
+        shell: bash
         run: |
           shopt -s nullglob globstar
           for FILE in ./app/build/outputs/apk/**/*.apk; do mv "$FILE" "${FILE%-*}.apk"; done
