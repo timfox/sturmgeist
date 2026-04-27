@@ -136,6 +136,8 @@ LEG_BUNDLED_LIB(FREETYPE Freetype2 "BUILD_CLIENT AND FEATURE_FREETYPE")
 LEG_BUNDLED_LIB(SQLITE3 SQlite3 "BUILD_CLIENT OR BUILD_MOD")
 LEG_BUNDLED_LIB(CJSON cJSON "BUILD_ENGINE OR BUILD_MOD")
 
+option(ENABLE_LTO				"Enable IPO/LTO for Release-style builds (toolchain must support it)"	OFF)
+
 #-----------------------------------------------------------------
 # Setup
 #-----------------------------------------------------------------
@@ -173,6 +175,9 @@ include(cmake/ETLTargets.cmake)
 
 # Platform specific compiler settings
 include(cmake/ETLPlatform.cmake)
+
+# Optional LTO (after compiler flags are established)
+include(cmake/ETLLTO.cmake)
 
 # Source globs
 include(cmake/ETLSources.cmake)
