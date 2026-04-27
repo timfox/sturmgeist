@@ -151,6 +151,16 @@ make
 sudo make install   # optional; set install vars first
 ```
 
+**Release packaging — optional LTO**
+
+For **Release** / **RelWithDebInfo** / **MinSizeRel**, you can enable **link-time optimization** if your toolchain supports it (CMake IPO):
+
+```sh
+cmake -DENABLE_LTO=ON ..
+```
+
+Leave it **off** for normal development (faster links). It cannot be combined with **`ENABLE_ASAN`**.
+
 **Notes**
 
 - 32-bit builds may need **multilib / `-devel`** packages.
