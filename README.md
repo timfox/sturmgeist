@@ -106,6 +106,10 @@ GitHub Actions on **`main`** / **`master`** run **[`.github/workflows/ci.yml`](.
 
 Forks without **`LEGACY_CI_WEBHOOK`** still get a full CI signal; the optional Discord notify step is skipped when that secret is unset. The **`check-compiler-warnings`** job scans native build logs for new compiler warnings in game code; **Android** and **Windows** (`win` / `win64`) logs are treated as informational only (see `misc/collect-and-check-gh-build-logs.py`).
 
+**Pull request hygiene:** Before merging, confirm the branch is **rebased on current `main`** and does not revert unrelated work. Close or update stale PRs that show **merge conflicts** against `main`.
+
+**Measuring filesystem startup:** Use **`+set fs_startupTiming 1`** on the command line (or set `fs_startupTiming` to `1` in the console before a full FS re-init). The log prints **`FS startup wall time: N ms`** after pk3 search paths are built. For per-frame timing once running, use **`com_speeds`**.
+
 ## Development helpers
 
 [Pixi](https://pixi.sh/) workspace: **`pixi.toml`**.

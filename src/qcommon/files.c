@@ -256,6 +256,7 @@ typedef struct searchpath_s
  */
 char                fs_gamedir[MAX_OSPATH];
 static cvar_t       *fs_debug;
+static cvar_t       *fs_startupTiming;
 static cvar_t       *fs_homepath;
 static cvar_t       *fs_basepath;
 static cvar_t       *fs_basegame;
@@ -4502,12 +4503,15 @@ static void FS_Startup(const char *gameName)
 {
 	const char *homePath;
 	int        i;
+	int        fs_startup_begin_ms;
 
 	Com_Printf("----- Initializing Filesystem --\n");
 
 	fs_packFiles = 0;
 
 	fs_debug    = Cvar_Get("fs_debug", "0", 0);
+	fs_startupTiming = Cvar_Get("fs_startupTiming", "0", CVAR_TEMP);
+	fs_startup_begin_ms = Sys_Milliseconds();
 	fs_basepath = Cvar_Get("fs_basepath", Sys_DefaultInstallPath(), CVAR_INIT | CVAR_PROTECTED);
 	fs_basegame = Cvar_Get("fs_basegame", "", CVAR_INIT | CVAR_PROTECTED);
 
@@ -4614,6 +4618,11 @@ static void FS_Startup(const char *gameName)
 	}
 
 #endif // ifndef DEDICATED
+
+	if (fs_startupTiming->integer)
+	{
+		Com_Printf("FS startup wall time: %i ms\n", Sys_Milliseconds() - fs_startup_begin_ms);
+	}
 
 	Com_Printf("--------------------------------\n");
 }
