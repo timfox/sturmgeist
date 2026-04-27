@@ -351,6 +351,14 @@ parse_commandline() {
         elif [ "$var" = "-nor2" ] || [ "$var" = "-no-r2" ]; then
             einfo "Will disable renderer2"
             FEATURE_RENDERER2=0
+        elif [ "$var" = "-vulkan" ] || [ "$var" = "-vk" ]; then
+            einfo "Will enable Vulkan renderer (alongside OpenGL 1 when dynamic renderer build is on)"
+            FEATURE_RENDERER_VULKAN=1
+            # Multiple backends require RENDERER_DYNAMIC=1 (CMake enforces this).
+            if [ "${RENDERER_DYNAMIC:-1}" -eq 0 ]; then
+                einfo "Re-enabling dynamic renderer build (required when building Vulkan + OpenGL)"
+                RENDERER_DYNAMIC=1
+            fi
         elif [ "$var" = "-nodynamic" ] || [ "$var" = "-no-dynamic" ]; then
             einfo "Will disable dynamic renderer build"
             RENDERER_DYNAMIC=0
@@ -545,6 +553,7 @@ generate_configuration() {
     FEATURE_RENDERER1=${FEATURE_RENDERER1:-1}
     FEATURE_RENDERER2=${FEATURE_RENDERER2:-0}
     FEATURE_RENDERER_GLES=${FEATURE_RENDERER_GLES:-0}
+    FEATURE_RENDERER_VULKAN=${FEATURE_RENDERER_VULKAN:-0}
     RENDERER_DYNAMIC=${RENDERER_DYNAMIC:-1}
 
     if [ "$FEATURE_SSL" -eq 0 ] && [ "$FEATURE_AUTH" -eq 1 ]; then
@@ -632,6 +641,7 @@ generate_configuration() {
         "-DFEATURE_RENDERER1=${FEATURE_RENDERER1}"
         "-DFEATURE_RENDERER2=${FEATURE_RENDERER2}"
         "-DFEATURE_RENDERER_GLES=${FEATURE_RENDERER_GLES}"
+        "-DFEATURE_RENDERER_VULKAN=${FEATURE_RENDERER_VULKAN}"
         "-DRENDERER_DYNAMIC=${RENDERER_DYNAMIC}"
         "-DFEATURE_LUASQL=${FEATURE_LUASQL}"
         "-DFEATURE_OMNIBOT=${FEATURE_OMNIBOT}"
@@ -1018,7 +1028,7 @@ print_help() {
     ehead "help - print this help"
     echo
     einfo "Properties"
-    ehead "-64, -32, -debug, -clang, -lsp, -nodb -nor2, -nodynamic, -nossl, -systemlibs"
+    ehead "-64, -32, -debug, -clang, -lsp, -nodb -nor2, -vulkan (-vk), -nodynamic, -nossl, -systemlibs"
     ehead "-noextra, -noupdate, -mod, -server, -ninja, -nopk3, -lsp"
     ehead "--build=*, --prefix=*, --osx=* --osx-arc=*"
     ehead "--silent -etpub -jaymod -nq"
