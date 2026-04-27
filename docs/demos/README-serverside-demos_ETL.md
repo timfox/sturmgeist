@@ -60,8 +60,8 @@ DEV NOTES
 
 * The patch architecture is pretty simple: we record every events/entities/playerStates at demo recording, and for playback we just hook at the end of each server frame and overwrite with demo events. This way, demo events always take the upper hand on server's events, but it still allows the server to manage interpolation when there is no demo event. This is why the timescale and cl_freezeDemo functions work with server-side demos.
 
-TODO
-----
+Open items (historical)
+-----------------------
 
 * ExcessivePlus new scoreboard is buggy and shows wrong scores and stats, except when one of the players die (producing and sending a new scoreboard state, so this forces the gamecode to update with the correct scoreboard state from demo). A generic solution might be to: always save the full server/gamecode state at the end of one frame (in sv_demo.c), and then at the beginning of next frame restore the full server/gamecode state. This way, each demo frame would pick up right from the last demo state, guaranteed. Because here the scoreboard bug is probably due to ExcessivePlus having a too high scoreboard refresh rate, so it gets refreshed between demo frames where there is a scoreboard refresh (in other words, E+ is refreshing the scoreboard even though there is no new info: E+ is active in its approach to scoreboard refreshing, whereas ioq3 is passive and waits for real updates). But with this approach, check if timescale and cl_freezeDemo still work (because saving/restoring full server state might break ability to interpolate frames between recorded demo frames). Might want to look into RestoreCmdContext() and SaveCmdContext().
 
@@ -179,7 +179,7 @@ CHANGELOG (newest to the bottom)
 * Generations Arena: team management does not work (when a player switch team, he is not affected to the right team)
 * E+ now real players join the game...
 * E+ democlients are not spectatable, userinfo is not reliable - now update, specs are spectatable...
-* cleaned FIXME
+* cleaned (legacy FIXME items addressed in-tree where noted)
 * clean code
 * Fix inactivity timers (simulate UserMove or just send a fake usercmd_t) - had to craft a remoteAddress with NET_StringToAdr, because else if we just use Info_SetValueForKey(userinfo, "ip", "localhost") the server would remove the ip key in the userinfo because no real address can be found for democlients.
 * SV_DemoChangeMaxClients() does not consider privateclients reserved slots when moving clients (eg: with 2 privateslots: 2 -> 12 -> 0)

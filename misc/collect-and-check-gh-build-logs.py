@@ -91,8 +91,7 @@ def clean_and_process_file(arch: str, filename: str):
                     ],
                 )
             ):
-                ## skip explicitly ignored warnings - TODO fixup for
-                ## Windows
+                # Match EXPLICITLY_IGNORED_WARNINGS[arch] before counting as pertinent.
                 # strip timestamp
                 parts = line.split(sep=" ", maxsplit=1)[1]
                 # split at 'warning:'
