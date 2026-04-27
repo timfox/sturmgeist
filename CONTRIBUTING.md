@@ -42,6 +42,10 @@ If you are interested to participate, ensure to read first our contribution guid
 * [How to commit your code](https://github.com/etlegacy/etlegacy/wiki/How-to-commit-Your-Code)
 * [Coding conventions](https://github.com/etlegacy/etlegacy/wiki/Coding-Conventions)
 
+## PULL REQUESTS
+
+Rebase onto **current `main`** before review, and avoid PRs that would **revert** unrelated landed changes. Close obsolete PRs that are superseded or remain **unmergeable** after a rebase.
+
 ## UPSTREAM AND FORKS
 
 To pull the latest changes from the main ET: Legacy repository without merging yet:
