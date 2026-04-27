@@ -3097,7 +3097,8 @@ void Com_Init(char *commandLine)
 	// init commands and vars
 	//
 	// no need to latch this in ET, our recoil is framerate independant
-	com_maxfps = Cvar_Get("com_maxfps", "125", CVAR_ARCHIVE /*|CVAR_LATCH*/);
+	// Default 120: common 120 Hz display refresh; cap still 20..500 via Cvar_CheckRange.
+	com_maxfps = Cvar_Get("com_maxfps", "120", CVAR_ARCHIVE /*|CVAR_LATCH*/);
 	Cvar_CheckRange(com_maxfps, 20, 500, qtrue);
 
 	com_maxfpsUnfocused = Cvar_Get("com_maxfpsUnfocused", "-1", CVAR_ARCHIVE);

@@ -80,6 +80,13 @@ Then tune **`BUNDLED_LIBS`** and per-library **`BUNDLED_*`** flags in CMake. Ver
 **Vulkan renderer** (`-DFEATURE_RENDERER_VULKAN=ON`)
 
 - **Vulkan loader** — CMake `find_package(Vulkan)` (e.g. LunarG SDK or distro `libvulkan-dev`).
+- **easybuild (Linux/macOS):** pass **`-vulkan`** or **`-vk`** to add the Vulkan backend next to OpenGL 1 (dynamic renderer build is forced on if needed). Example: `./easybuild.sh build -64 -vulkan`.
+- **Ray-tracing / advanced RHI** work in progress — track **[draft PR #5](https://github.com/timfox/sturmgeist/pull/5)** (`cursor/vulkan-ray-tracing-bee0`) for KHR RT experiments; default Vulkan path remains the shipped renderer stack.
+
+**High refresh displays (e.g. 120 Hz)**
+
+- Default client cap **`com_maxfps`** is **120** (still clamped **20–500**). Raise it if your display and GPU can sustain higher frame times consistently.
+- **Vsync** is controlled separately (e.g. **`r_swapInterval`** for OpenGL; use driver or in-game settings as appropriate for Vulkan).
 
 ## Clone and sync (this fork)
 
