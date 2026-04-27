@@ -4509,11 +4509,11 @@ static void FS_Startup(const char *gameName)
 
 	fs_packFiles = 0;
 
-	fs_debug    = Cvar_Get("fs_debug", "0", 0);
-	fs_startupTiming = Cvar_Get("fs_startupTiming", "0", CVAR_TEMP);
+	fs_debug            = Cvar_Get("fs_debug", "0", 0);
+	fs_startupTiming    = Cvar_Get("fs_startupTiming", "0", CVAR_TEMP);
 	fs_startup_begin_ms = Sys_Milliseconds();
-	fs_basepath = Cvar_Get("fs_basepath", Sys_DefaultInstallPath(), CVAR_INIT | CVAR_PROTECTED);
-	fs_basegame = Cvar_Get("fs_basegame", "", CVAR_INIT | CVAR_PROTECTED);
+	fs_basepath         = Cvar_Get("fs_basepath", Sys_DefaultInstallPath(), CVAR_INIT | CVAR_PROTECTED);
+	fs_basegame         = Cvar_Get("fs_basegame", "", CVAR_INIT | CVAR_PROTECTED);
 
 	homePath = Sys_DefaultHomePath();
 
