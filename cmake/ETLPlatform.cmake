@@ -53,7 +53,9 @@ endif()
 
 if(UNIX)
 	# optimization/debug flags
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -ffast-math")
+	# -ffast-math: relax IEEE / errno rules for faster libm and codegen.
+	# -fno-math-errno: avoid errno writes from inlined math (pairs with -ffast-math).
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -ffast-math -fno-math-errno")
 	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		# XXX : attach debug symbols to all builds for now
 		# set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
@@ -64,7 +66,7 @@ if(UNIX)
 	endif()
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
 
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math -fno-math-errno")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
 	if(ENABLE_ASAN)
