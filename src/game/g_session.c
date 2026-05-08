@@ -76,8 +76,22 @@ void G_WriteClientSessionData(gclient_t *client, qboolean restart)
 	cJSON_AddNumberToObject(root, "spectatorClient", client->sess.spectatorClient);
 	cJSON_AddNumberToObject(root, "userSpectatorClient", client->sess.userSpectatorClient);
 	cJSON_AddNumberToObject(root, "playerType", client->sess.playerType);
-	cJSON_AddNumberToObject(root, "playerWeapon", client->sess.playerWeapon);
-	cJSON_AddNumberToObject(root, "playerWeapon2", client->sess.playerWeapon2);
+
+	// If the player is in limbo or dead, their playerWeapon is stale (only
+	// synced from latchPlayerWeapon at spawn time in ClientSpawn). Persist the
+	// latched values so that on session restore the stale active weapon doesn't
+	// ghost-occupy a restricted weapon slot
+	if (client->ps.pm_flags & PMF_LIMBO || client->ps.pm_type == PM_DEAD)
+	{
+		cJSON_AddNumberToObject(root, "playerWeapon", client->sess.latchPlayerWeapon);
+		cJSON_AddNumberToObject(root, "playerWeapon2", client->sess.latchPlayerWeapon2);
+	}
+	else
+	{
+		cJSON_AddNumberToObject(root, "playerWeapon", client->sess.playerWeapon);
+		cJSON_AddNumberToObject(root, "playerWeapon2", client->sess.playerWeapon2);
+	}
+
 	cJSON_AddNumberToObject(root, "latchPlayerType", client->sess.latchPlayerType);
 	cJSON_AddNumberToObject(root, "latchPlayerWeapon", client->sess.latchPlayerWeapon);
 	cJSON_AddNumberToObject(root, "latchPlayerWeapon2", client->sess.latchPlayerWeapon2);

@@ -1274,12 +1274,6 @@ void Cmd_Kill_f(gentity_t *ent, unsigned int dwCommand, int value)
 		return;
 	}
 
-	if (g_gamestate.integer == GS_PLAYING && ent->client->isSpawnInvulnerability && ent->client->ps.powerups[PW_INVULNERABLE] > level.time && !g_cheats.value)
-	{
-		trap_SendServerCommand(ent - g_entities, "cp \"You are invulnerable - ^3/kill^7 is disabled.\"");
-		return;
-	}
-
 	if (ent->health <= 0)
 	{
 		limbo(ent, qtrue);
@@ -1918,9 +1912,27 @@ int G_TeamCount(gentity_t *ent, int weap)
 
 		if (weap != -1)
 		{
-			if (level.clients[j].sess.playerWeapon != weap && level.clients[j].sess.latchPlayerWeapon != weap)
+			// For alive players (not in limbo), check the weapon they are
+			// actively carrying. For dead/limbo players, only check the
+			// weapon they intend to spawn with. Previously both fields were
+			// checked unconditionally, which caused a stale playerWeapon
+			// (only synced at spawn time in ClientSpawn) to permanently
+			// "latch" a weapon slot across map changes
+			if (level.clients[j].ps.pm_flags & PMF_LIMBO
+			    || level.clients[j].ps.pm_type == PM_DEAD
+			    || level.clients[j].sess.sessionTeam == TEAM_SPECTATOR)
 			{
-				continue;
+				if (level.clients[j].sess.latchPlayerWeapon != weap)
+				{
+					continue;
+				}
+			}
+			else
+			{
+				if (level.clients[j].sess.playerWeapon != weap && level.clients[j].sess.latchPlayerWeapon != weap)
+				{
+					continue;
+				}
 			}
 		}
 
