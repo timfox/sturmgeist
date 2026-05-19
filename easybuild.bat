@@ -26,6 +26,7 @@ SET nq=0
 SET use_autoupdate=1
 SET use_extra=1
 SET build_r2=0
+SET build_vulkan=0
 SET build_ssl=1
 SET build_auth=1
 SET wolf_ssl=0
@@ -69,7 +70,7 @@ IF NOT "%1"=="" (
 		ECHO help - print this help
 		ECHO.
 		ECHO Properties
-		ECHO -64, -debug, -mod, -etpub, -jaymod, -nq, -noextra, -noupdate, -nor2, -nossl, -generator [generator], -toolset [version] -build_dir [dir]
+		ECHO -64, -debug, -mod, -etpub, -jaymod, -nq, -noextra, -noupdate, -nor2, -vulkan, -vk, -nossl, -generator [generator], -toolset [version] -build_dir [dir]
 		ECHO.
 		GOTO:EOF
 	) ELSE IF /I "%1"=="-64" (
@@ -104,6 +105,10 @@ IF NOT "%1"=="" (
 		SET build_r2=0
 	) ELSE IF /I "%1"=="-no-r2" (
 		SET build_r2=0
+	) ELSE IF /I "%1"=="-vulkan" (
+		SET build_vulkan=1
+	) ELSE IF /I "%1"=="-vk" (
+		SET build_vulkan=1
 	) ELSE IF /I "%1"=="-generator" (
 		SET generator=%~2
 		SHIFT
@@ -408,13 +413,18 @@ GOTO :EOF
 		SET feature_auth=0
 	)
 
+	SET renderer_dynamic=0
+	IF !build_r2!==1 SET renderer_dynamic=1
+	IF !build_vulkan!==1 SET renderer_dynamic=1
+
 	SET local_build_string=-DBUNDLED_LIBS=YES ^
 	-DCMAKE_BUILD_TYPE=!build_type! ^
 	-DFEATURE_AUTOUPDATE=!use_autoupdate! ^
 	-DINSTALL_EXTRA=!use_extra! ^
 	-DCROSS_COMPILE32=!CROSSCOMP! ^
-	-DRENDERER_DYNAMIC=!build_r2! ^
+	-DRENDERER_DYNAMIC=!renderer_dynamic! ^
 	-DFEATURE_RENDERER2=!build_r2! ^
+	-DFEATURE_RENDERER_VULKAN=!build_vulkan! ^
 	-DBUNDLED_WOLFSSL=!wolf_ssl! ^
 	-DBUNDLED_OPENSSL=!open_ssl! ^
 	-DFEATURE_SSL=!feature_ssl! ^
