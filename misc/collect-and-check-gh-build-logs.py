@@ -23,6 +23,7 @@ EXPLICITLY_IGNORED_WARNINGS = {
         # ],
     ],
     "lnx64": [],
+    "lnx64-vulkan": [],
     "osx": [],
     "win": [],
     "win64": [],

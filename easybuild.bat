@@ -27,6 +27,7 @@ SET use_autoupdate=1
 SET use_extra=1
 SET build_r2=0
 SET build_vulkan=0
+SET force_no_dynamic=0
 SET build_ssl=1
 SET build_auth=1
 SET wolf_ssl=0
@@ -70,7 +71,7 @@ IF NOT "%1"=="" (
 		ECHO help - print this help
 		ECHO.
 		ECHO Properties
-		ECHO -64, -debug, -mod, -etpub, -jaymod, -nq, -noextra, -noupdate, -nor2, -vulkan, -vk, -nossl, -generator [generator], -toolset [version] -build_dir [dir]
+		ECHO -64, -debug, -mod, -etpub, -jaymod, -nq, -noextra, -noupdate, -nor2, -vulkan, -vk, -nodynamic, -nossl, -generator [generator], -toolset [version] -build_dir [dir]
 		ECHO.
 		GOTO:EOF
 	) ELSE IF /I "%1"=="-64" (
@@ -109,6 +110,10 @@ IF NOT "%1"=="" (
 		SET build_vulkan=1
 	) ELSE IF /I "%1"=="-vk" (
 		SET build_vulkan=1
+	) ELSE IF /I "%1"=="-nodynamic" (
+		SET force_no_dynamic=1
+	) ELSE IF /I "%1"=="-no-dynamic" (
+		SET force_no_dynamic=1
 	) ELSE IF /I "%1"=="-generator" (
 		SET generator=%~2
 		SHIFT
@@ -414,8 +419,10 @@ GOTO :EOF
 	)
 
 	SET renderer_dynamic=0
-	IF !build_r2!==1 SET renderer_dynamic=1
-	IF !build_vulkan!==1 SET renderer_dynamic=1
+	IF !force_no_dynamic!==0 (
+		IF !build_r2!==1 SET renderer_dynamic=1
+		IF !build_vulkan!==1 SET renderer_dynamic=1
+	)
 
 	SET local_build_string=-DBUNDLED_LIBS=YES ^
 	-DCMAKE_BUILD_TYPE=!build_type! ^
