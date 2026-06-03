@@ -8,7 +8,7 @@
  */
 
 #include "vk_rhi.h"
-#include "vk_rhi_formats.h"
+#include "vk_rhi_internal.h"
 
 #include "../../qcommon/qcommon.h"
 
@@ -26,86 +26,56 @@
 #define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
-typedef struct
-{
-	qboolean active;
+vkRhi_t vk;
 
-	struct SDL_Window *window;
+PFN_vkGetInstanceProcAddr pfn_vkGetInstanceProcAddr;
+PFN_vkCreateInstance pfn_vkCreateInstance;
+PFN_vkDestroyInstance pfn_vkDestroyInstance;
+PFN_vkEnumeratePhysicalDevices pfn_vkEnumeratePhysicalDevices;
+PFN_vkGetPhysicalDeviceProperties pfn_vkGetPhysicalDeviceProperties;
+PFN_vkGetPhysicalDeviceQueueFamilyProperties pfn_vkGetPhysicalDeviceQueueFamilyProperties;
+PFN_vkGetPhysicalDeviceSurfaceSupportKHR pfn_vkGetPhysicalDeviceSurfaceSupportKHR;
+PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR pfn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+PFN_vkGetPhysicalDeviceSurfaceFormatsKHR pfn_vkGetPhysicalDeviceSurfaceFormatsKHR;
+PFN_vkGetPhysicalDeviceSurfacePresentModesKHR pfn_vkGetPhysicalDeviceSurfacePresentModesKHR;
+PFN_vkDestroySurfaceKHR pfn_vkDestroySurfaceKHR;
+PFN_vkEnumerateDeviceExtensionProperties pfn_vkEnumerateDeviceExtensionProperties;
+PFN_vkGetPhysicalDeviceFeatures2 pfn_vkGetPhysicalDeviceFeatures2;
+PFN_vkGetPhysicalDeviceProperties2 pfn_vkGetPhysicalDeviceProperties2;
+PFN_vkGetPhysicalDeviceMemoryProperties pfn_vkGetPhysicalDeviceMemoryProperties;
 
-	VkInstance instance;
-	VkSurfaceKHR surface;
-	VkPhysicalDevice physicalDevice;
-	VkDevice device;
-	VkQueue graphicsQueue;
-	uint32_t queueFamilyIndex;
+PFN_vkCreateDevice pfn_vkCreateDevice;
+PFN_vkDestroyDevice pfn_vkDestroyDevice;
+PFN_vkGetDeviceQueue pfn_vkGetDeviceQueue;
+PFN_vkCreateSwapchainKHR pfn_vkCreateSwapchainKHR;
+PFN_vkDestroySwapchainKHR pfn_vkDestroySwapchainKHR;
+PFN_vkGetSwapchainImagesKHR pfn_vkGetSwapchainImagesKHR;
+PFN_vkCreateImageView pfn_vkCreateImageView;
+PFN_vkDestroyImageView pfn_vkDestroyImageView;
+PFN_vkCreateRenderPass pfn_vkCreateRenderPass;
+PFN_vkDestroyRenderPass pfn_vkDestroyRenderPass;
+PFN_vkCreateFramebuffer pfn_vkCreateFramebuffer;
+PFN_vkDestroyFramebuffer pfn_vkDestroyFramebuffer;
+PFN_vkCreateCommandPool pfn_vkCreateCommandPool;
+PFN_vkDestroyCommandPool pfn_vkDestroyCommandPool;
+PFN_vkAllocateCommandBuffers pfn_vkAllocateCommandBuffers;
+PFN_vkFreeCommandBuffers pfn_vkFreeCommandBuffers;
+PFN_vkCreateSemaphore pfn_vkCreateSemaphore;
+PFN_vkDestroySemaphore pfn_vkDestroySemaphore;
+PFN_vkCreateFence pfn_vkCreateFence;
+PFN_vkDestroyFence pfn_vkDestroyFence;
+PFN_vkAcquireNextImageKHR pfn_vkAcquireNextImageKHR;
+PFN_vkQueueSubmit pfn_vkQueueSubmit;
+PFN_vkQueuePresentKHR pfn_vkQueuePresentKHR;
+PFN_vkBeginCommandBuffer pfn_vkBeginCommandBuffer;
+PFN_vkEndCommandBuffer pfn_vkEndCommandBuffer;
+PFN_vkCmdBeginRenderPass pfn_vkCmdBeginRenderPass;
+PFN_vkCmdEndRenderPass pfn_vkCmdEndRenderPass;
+PFN_vkWaitForFences pfn_vkWaitForFences;
+PFN_vkResetFences pfn_vkResetFences;
+PFN_vkDeviceWaitIdle pfn_vkDeviceWaitIdle;
 
-	VkSwapchainKHR swapchain;
-	VkFormat swapchainImageFormat;
-	VkExtent2D swapchainExtent;
-	uint32_t swapchainImageCount;
-	VkImage *swapchainImages;
-	VkImageView *swapchainImageViews;
-
-	VkRenderPass renderPass;
-	VkCommandPool commandPool;
-	VkCommandBuffer *commandBuffers;
-	VkFramebuffer *framebuffers;
-
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
-	VkFence inFlightFence;
-
-	qboolean meshShaderExt;
-	qboolean rayTracingExt;
-} vkRhi_t;
-
-static vkRhi_t vk;
-
-static PFN_vkGetInstanceProcAddr pfn_vkGetInstanceProcAddr;
-static PFN_vkCreateInstance pfn_vkCreateInstance;
-static PFN_vkDestroyInstance pfn_vkDestroyInstance;
-static PFN_vkEnumeratePhysicalDevices pfn_vkEnumeratePhysicalDevices;
-static PFN_vkGetPhysicalDeviceProperties pfn_vkGetPhysicalDeviceProperties;
-static PFN_vkGetPhysicalDeviceQueueFamilyProperties pfn_vkGetPhysicalDeviceQueueFamilyProperties;
-static PFN_vkGetPhysicalDeviceSurfaceSupportKHR pfn_vkGetPhysicalDeviceSurfaceSupportKHR;
-static PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR pfn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-static PFN_vkGetPhysicalDeviceSurfaceFormatsKHR pfn_vkGetPhysicalDeviceSurfaceFormatsKHR;
-static PFN_vkGetPhysicalDeviceSurfacePresentModesKHR pfn_vkGetPhysicalDeviceSurfacePresentModesKHR;
-static PFN_vkDestroySurfaceKHR pfn_vkDestroySurfaceKHR;
-static PFN_vkEnumerateDeviceExtensionProperties pfn_vkEnumerateDeviceExtensionProperties;
-
-static PFN_vkCreateDevice pfn_vkCreateDevice;
-static PFN_vkDestroyDevice pfn_vkDestroyDevice;
-static PFN_vkGetDeviceQueue pfn_vkGetDeviceQueue;
-static PFN_vkCreateSwapchainKHR pfn_vkCreateSwapchainKHR;
-static PFN_vkDestroySwapchainKHR pfn_vkDestroySwapchainKHR;
-static PFN_vkGetSwapchainImagesKHR pfn_vkGetSwapchainImagesKHR;
-static PFN_vkCreateImageView pfn_vkCreateImageView;
-static PFN_vkDestroyImageView pfn_vkDestroyImageView;
-static PFN_vkCreateRenderPass pfn_vkCreateRenderPass;
-static PFN_vkDestroyRenderPass pfn_vkDestroyRenderPass;
-static PFN_vkCreateFramebuffer pfn_vkCreateFramebuffer;
-static PFN_vkDestroyFramebuffer pfn_vkDestroyFramebuffer;
-static PFN_vkCreateCommandPool pfn_vkCreateCommandPool;
-static PFN_vkDestroyCommandPool pfn_vkDestroyCommandPool;
-static PFN_vkAllocateCommandBuffers pfn_vkAllocateCommandBuffers;
-static PFN_vkFreeCommandBuffers pfn_vkFreeCommandBuffers;
-static PFN_vkCreateSemaphore pfn_vkCreateSemaphore;
-static PFN_vkDestroySemaphore pfn_vkDestroySemaphore;
-static PFN_vkCreateFence pfn_vkCreateFence;
-static PFN_vkDestroyFence pfn_vkDestroyFence;
-static PFN_vkAcquireNextImageKHR pfn_vkAcquireNextImageKHR;
-static PFN_vkQueueSubmit pfn_vkQueueSubmit;
-static PFN_vkQueuePresentKHR pfn_vkQueuePresentKHR;
-static PFN_vkBeginCommandBuffer pfn_vkBeginCommandBuffer;
-static PFN_vkEndCommandBuffer pfn_vkEndCommandBuffer;
-static PFN_vkCmdBeginRenderPass pfn_vkCmdBeginRenderPass;
-static PFN_vkCmdEndRenderPass pfn_vkCmdEndRenderPass;
-static PFN_vkWaitForFences pfn_vkWaitForFences;
-static PFN_vkResetFences pfn_vkResetFences;
-static PFN_vkDeviceWaitIdle pfn_vkDeviceWaitIdle;
-
-static PFN_vkGetDeviceProcAddr pfn_vkGetDeviceProcAddr;
+PFN_vkGetDeviceProcAddr pfn_vkGetDeviceProcAddr;
 
 #define VK_LOAD_GLOBAL(name) \
 	do { \
@@ -162,6 +132,12 @@ static qboolean vk_load_instance(VkInstance inst)
 	VK_LOAD_INSTANCE(inst, vkCreateDevice);
 	VK_LOAD_INSTANCE(inst, vkDestroyDevice);
 	VK_LOAD_INSTANCE(inst, vkGetDeviceProcAddr);
+	pfn_vkGetPhysicalDeviceFeatures2 =
+	    (PFN_vkGetPhysicalDeviceFeatures2)pfn_vkGetInstanceProcAddr(inst, "vkGetPhysicalDeviceFeatures2");
+	pfn_vkGetPhysicalDeviceProperties2 =
+	    (PFN_vkGetPhysicalDeviceProperties2)pfn_vkGetInstanceProcAddr(inst, "vkGetPhysicalDeviceProperties2");
+	pfn_vkGetPhysicalDeviceMemoryProperties =
+	    (PFN_vkGetPhysicalDeviceMemoryProperties)pfn_vkGetInstanceProcAddr(inst, "vkGetPhysicalDeviceMemoryProperties");
 	return qtrue;
 }
 
@@ -233,91 +209,6 @@ static uint32_t vk_find_queue(VkPhysicalDevice phys, VkSurfaceKHR surface, uint3
 	return UINT32_MAX;
 }
 
-static qboolean vk_pick_physical(VkSurfaceKHR surface)
-{
-	uint32_t i, count = 0;
-	VkPhysicalDevice *devices;
-	VkPhysicalDeviceProperties props;
-
-	pfn_vkEnumeratePhysicalDevices(vk.instance, &count, NULL);
-	if (!count)
-	{
-		Com_Printf(S_COLOR_RED "Vulkan: no physical devices\n");
-		return qfalse;
-	}
-	devices = (VkPhysicalDevice *)malloc(sizeof(VkPhysicalDevice) * count);
-	pfn_vkEnumeratePhysicalDevices(vk.instance, &count, devices);
-
-	for (i = 0; i < count; i++)
-	{
-		uint32_t qf = UINT32_MAX;
-		if (vk_find_queue(devices[i], surface, &qf) == UINT32_MAX)
-		{
-			continue;
-		}
-		vk.physicalDevice   = devices[i];
-		vk.queueFamilyIndex = qf;
-		pfn_vkGetPhysicalDeviceProperties(devices[i], &props);
-		Com_Printf("Vulkan: using GPU %s\n", props.deviceName);
-		free(devices);
-		return qtrue;
-	}
-
-	free(devices);
-	Com_Printf(S_COLOR_RED "Vulkan: no suitable GPU with graphics+present\n");
-	return qfalse;
-}
-
-static void vk_log_device_extensions(VkPhysicalDevice phys)
-{
-	uint32_t i, n = 0;
-	VkExtensionProperties *props;
-
-	vk.meshShaderExt   = qfalse;
-	vk.rayTracingExt   = qfalse;
-
-	pfn_vkEnumerateDeviceExtensionProperties(phys, NULL, &n, NULL);
-	if (!n)
-	{
-		return;
-	}
-	props = (VkExtensionProperties *)malloc(sizeof(VkExtensionProperties) * n);
-	pfn_vkEnumerateDeviceExtensionProperties(phys, NULL, &n, props);
-
-	for (i = 0; i < n; i++)
-	{
-		if (!strcmp(props[i].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME))
-		{
-			vk.meshShaderExt = qtrue;
-		}
-		if (!strcmp(props[i].extensionName, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) ||
-		    !strcmp(props[i].extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME))
-		{
-			vk.rayTracingExt = qtrue;
-		}
-	}
-
-	if (vk.meshShaderExt)
-	{
-		Com_Printf("Vulkan: optional " VK_EXT_MESH_SHADER_EXTENSION_NAME " available (pipeline not wired yet)\n");
-	}
-	else
-	{
-		Com_Printf("Vulkan: " VK_EXT_MESH_SHADER_EXTENSION_NAME " not reported by device\n");
-	}
-
-	if (vk.rayTracingExt)
-	{
-		Com_Printf("Vulkan: ray tracing extension(s) available (not enabled yet)\n");
-	}
-	else
-	{
-		Com_Printf("Vulkan: ray tracing extensions not reported by device\n");
-	}
-
-	free(props);
-}
-
 static qboolean vk_device_has_swapchain(VkPhysicalDevice phys)
 {
 	uint32_t i, n = 0;
@@ -343,32 +234,222 @@ static qboolean vk_device_has_swapchain(VkPhysicalDevice phys)
 	return has;
 }
 
+static qboolean vk_device_raytracing_features_ok(VkPhysicalDevice phys)
+{
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtFeat;
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeat;
+	VkPhysicalDeviceBufferDeviceAddressFeaturesKHR bdaFeat;
+	VkPhysicalDeviceFeatures2 feats2;
+
+	if (!pfn_vkGetPhysicalDeviceFeatures2)
+	{
+		return qfalse;
+	}
+
+	Com_Memset(&rtFeat, 0, sizeof(rtFeat));
+	rtFeat.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+	Com_Memset(&asFeat, 0, sizeof(asFeat));
+	asFeat.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+	asFeat.pNext = &rtFeat;
+	Com_Memset(&bdaFeat, 0, sizeof(bdaFeat));
+	bdaFeat.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
+	bdaFeat.pNext = &asFeat;
+	Com_Memset(&feats2, 0, sizeof(feats2));
+	feats2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	feats2.pNext = &bdaFeat;
+
+	pfn_vkGetPhysicalDeviceFeatures2(phys, &feats2);
+	return (qboolean)(rtFeat.rayTracingPipeline && asFeat.accelerationStructure && bdaFeat.bufferDeviceAddress);
+}
+
+static qboolean vk_phys_has_raytracing_stack(VkPhysicalDevice phys)
+{
+	uint32_t i, n = 0;
+	VkExtensionProperties *props;
+	qboolean hasRtPipe = qfalse, hasAccel = qfalse, hasDefer = qfalse, hasBda = qfalse;
+
+	pfn_vkEnumerateDeviceExtensionProperties(phys, NULL, &n, NULL);
+	if (!n)
+	{
+		return qfalse;
+	}
+	props = (VkExtensionProperties *)malloc(sizeof(VkExtensionProperties) * n);
+	pfn_vkEnumerateDeviceExtensionProperties(phys, NULL, &n, props);
+	for (i = 0; i < n; i++)
+	{
+		if (!strcmp(props[i].extensionName, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME))
+		{
+			hasRtPipe = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME))
+		{
+			hasAccel = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME))
+		{
+			hasDefer = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+		{
+			hasBda = qtrue;
+		}
+	}
+	free(props);
+	return (qboolean)(hasRtPipe && hasAccel && hasDefer && hasBda);
+}
+
+static void vk_log_device_extensions(VkPhysicalDevice phys)
+{
+	uint32_t i, n = 0;
+	VkExtensionProperties *props;
+	qboolean hasRtPipe = qfalse, hasAccel = qfalse, hasDefer = qfalse, hasBda = qfalse, hasRayQuery = qfalse;
+
+	vk.meshShaderExt = qfalse;
+	vk.rayTracingExt = qfalse;
+
+	pfn_vkEnumerateDeviceExtensionProperties(phys, NULL, &n, NULL);
+	if (!n)
+	{
+		return;
+	}
+	props = (VkExtensionProperties *)malloc(sizeof(VkExtensionProperties) * n);
+	pfn_vkEnumerateDeviceExtensionProperties(phys, NULL, &n, props);
+
+	for (i = 0; i < n; i++)
+	{
+		if (!strcmp(props[i].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME))
+		{
+			vk.meshShaderExt = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME))
+		{
+			hasRtPipe = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME))
+		{
+			hasRayQuery = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME))
+		{
+			hasAccel = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME))
+		{
+			hasDefer = qtrue;
+		}
+		if (!strcmp(props[i].extensionName, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+		{
+			hasBda = qtrue;
+		}
+	}
+
+	vk.rayTracingExt = hasRtPipe && hasAccel && hasDefer && hasBda;
+
+	if (vk.meshShaderExt)
+	{
+		Com_Printf("Vulkan: optional " VK_EXT_MESH_SHADER_EXTENSION_NAME " available (pipeline not wired yet)\n");
+	}
+	else
+	{
+		Com_Printf("Vulkan: " VK_EXT_MESH_SHADER_EXTENSION_NAME " not reported by device\n");
+	}
+
+	if (vk.rayTracingExt)
+	{
+		Com_Printf("Vulkan: KHR ray tracing pipeline stack available (enabled on device if supported)\n");
+	}
+	else if (hasRtPipe || hasRayQuery)
+	{
+		Com_Printf("Vulkan: partial ray tracing extensions only (need " VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
+		           ", " VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME ", " VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME ")\n");
+	}
+	else
+	{
+		Com_Printf("Vulkan: hardware ray tracing extensions not reported\n");
+	}
+
+	free(props);
+}
+
+static qboolean vk_try_select_device(VkSurfaceKHR surface, qboolean requireRayTracing)
+{
+	uint32_t i, count = 0;
+	VkPhysicalDevice *devices;
+	VkPhysicalDeviceProperties props;
+
+	pfn_vkEnumeratePhysicalDevices(vk.instance, &count, NULL);
+	if (!count)
+	{
+		return qfalse;
+	}
+	devices = (VkPhysicalDevice *)malloc(sizeof(VkPhysicalDevice) * count);
+	pfn_vkEnumeratePhysicalDevices(vk.instance, &count, devices);
+
+	for (i = 0; i < count; i++)
+	{
+		uint32_t qf = UINT32_MAX;
+		if (vk_find_queue(devices[i], surface, &qf) == UINT32_MAX)
+		{
+			continue;
+		}
+		if (!vk_device_has_swapchain(devices[i]))
+		{
+			continue;
+		}
+		if (requireRayTracing)
+		{
+			if (!vk_phys_has_raytracing_stack(devices[i]) || !vk_device_raytracing_features_ok(devices[i]))
+			{
+				continue;
+			}
+		}
+		vk.physicalDevice   = devices[i];
+		vk.queueFamilyIndex = qf;
+		pfn_vkGetPhysicalDeviceProperties(devices[i], &props);
+		Com_Printf("Vulkan: using GPU %s%s\n", props.deviceName, requireRayTracing ? " (ray tracing capable)" : "");
+		free(devices);
+		return qtrue;
+	}
+
+	free(devices);
+	return qfalse;
+}
+
+static qboolean vk_pick_physical(VkSurfaceKHR surface)
+{
+	if (pfn_vkGetPhysicalDeviceFeatures2 && vk_try_select_device(surface, qtrue))
+	{
+		return qtrue;
+	}
+	if (vk_try_select_device(surface, qfalse))
+	{
+		return qtrue;
+	}
+	Com_Printf(S_COLOR_RED "Vulkan: no suitable GPU with graphics+present (and swapchain)\n");
+	return qfalse;
+}
+
 qboolean VkRHI_Init(struct SDL_Window *window)
 {
 	unsigned int extCount = 0;
 	const char **sdlExts;
 	const char *layers[] = { NULL };
-	const char *reqExts[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	const char *reqExtsSwap[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	const char *reqExtsRt[]   = { VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		                          VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+		                          VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+		                          VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+		                          VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME };
 	VkApplicationInfo appInfo;
 	VkInstanceCreateInfo instInfo;
 	VkDeviceQueueCreateInfo qInfo;
 	float qprio = 1.f;
 	VkDeviceCreateInfo devInfo;
-	VkSwapchainCreateInfoKHR swInfo;
+	VkPhysicalDeviceVulkan12Features vk12Feat;
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeat;
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtFeat;
+	VkPhysicalDeviceFeatures2 feats2;
 	VkSurfaceCapabilitiesKHR caps;
-	uint32_t fmtCount = 0, modeCount = 0, imgCount = 0;
-	VkSurfaceFormatKHR *formats;
-	VkPresentModeKHR *modes;
-	VkSurfaceFormatKHR surfaceFormat;
-	VkPresentModeKHR presentMode;
-	VkAttachmentDescription colorAtt;
-	VkAttachmentReference colorRef;
-	VkSubpassDescription subpass;
-	VkRenderPassCreateInfo rpInfo;
-	VkCommandPoolCreateInfo poolInfo;
-	VkSemaphoreCreateInfo semInfo;
-	VkFenceCreateInfo fenceInfo;
-	uint32_t i;
 	VkResult res;
 
 	if (vk.active)
@@ -464,14 +545,52 @@ qboolean VkRHI_Init(struct SDL_Window *window)
 	qInfo.pQueuePriorities = &qprio;
 
 	Com_Memset(&devInfo, 0, sizeof(devInfo));
-	devInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	devInfo.queueCreateInfoCount    = 1;
-	devInfo.pQueueCreateInfos       = &qInfo;
-	devInfo.enabledExtensionCount   = ARRAY_LEN(reqExts);
-	devInfo.ppEnabledExtensionNames = reqExts;
-	devInfo.enabledLayerCount       = 0;
+	devInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	devInfo.queueCreateInfoCount = 1;
+	devInfo.pQueueCreateInfos    = &qInfo;
+	devInfo.enabledLayerCount    = 0;
 
-	res = pfn_vkCreateDevice(vk.physicalDevice, &devInfo, NULL, &vk.device);
+	if (vk.rayTracingExt && pfn_vkGetPhysicalDeviceFeatures2)
+	{
+		Com_Memset(&rtFeat, 0, sizeof(rtFeat));
+		rtFeat.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		rtFeat.rayTracingPipeline = VK_TRUE;
+		Com_Memset(&asFeat, 0, sizeof(asFeat));
+		asFeat.sType                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+		asFeat.accelerationStructure = VK_TRUE;
+		asFeat.pNext                 = &rtFeat;
+		Com_Memset(&vk12Feat, 0, sizeof(vk12Feat));
+		vk12Feat.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		vk12Feat.bufferDeviceAddress = VK_TRUE;
+		vk12Feat.pNext               = &asFeat;
+		Com_Memset(&feats2, 0, sizeof(feats2));
+		feats2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		feats2.pNext = &vk12Feat;
+		devInfo.pNext                   = &feats2;
+		devInfo.enabledExtensionCount   = ARRAY_LEN(reqExtsRt);
+		devInfo.ppEnabledExtensionNames = reqExtsRt;
+		res = pfn_vkCreateDevice(vk.physicalDevice, &devInfo, NULL, &vk.device);
+		if (res != VK_SUCCESS)
+		{
+			Com_Printf(S_COLOR_YELLOW "Vulkan: vkCreateDevice with ray tracing failed (%d), retrying without RT\n", (int)res);
+			vk.rayTracingExt = qfalse;
+			Com_Memset(&devInfo, 0, sizeof(devInfo));
+			devInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+			devInfo.queueCreateInfoCount = 1;
+			devInfo.pQueueCreateInfos    = &qInfo;
+			devInfo.enabledLayerCount    = 0;
+			devInfo.enabledExtensionCount   = ARRAY_LEN(reqExtsSwap);
+			devInfo.ppEnabledExtensionNames = reqExtsSwap;
+			res = pfn_vkCreateDevice(vk.physicalDevice, &devInfo, NULL, &vk.device);
+		}
+	}
+	else
+	{
+		devInfo.enabledExtensionCount   = ARRAY_LEN(reqExtsSwap);
+		devInfo.ppEnabledExtensionNames = reqExtsSwap;
+		res = pfn_vkCreateDevice(vk.physicalDevice, &devInfo, NULL, &vk.device);
+	}
+
 	if (res != VK_SUCCESS)
 	{
 		Com_Printf(S_COLOR_RED "Vulkan: vkCreateDevice failed (%d)\n", (int)res);
@@ -511,235 +630,12 @@ qboolean VkRHI_Init(struct SDL_Window *window)
 
 	pfn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk.physicalDevice, vk.surface, &caps);
 
-	pfn_vkGetPhysicalDeviceSurfaceFormatsKHR(vk.physicalDevice, vk.surface, &fmtCount, NULL);
-	if (!fmtCount)
+	if (!VkRhi_CreateSwapchainResources(window, &caps))
 	{
-		Com_Printf(S_COLOR_RED "Vulkan: no surface formats\n");
-		VkRHI_Shutdown();
-		return qfalse;
-	}
-	formats = (VkSurfaceFormatKHR *)malloc(sizeof(VkSurfaceFormatKHR) * fmtCount);
-	pfn_vkGetPhysicalDeviceSurfaceFormatsKHR(vk.physicalDevice, vk.surface, &fmtCount, formats);
-	surfaceFormat = VkRhi_ChooseSurfaceFormat(formats, fmtCount);
-	free(formats);
-
-	pfn_vkGetPhysicalDeviceSurfacePresentModesKHR(vk.physicalDevice, vk.surface, &modeCount, NULL);
-	modes = (VkPresentModeKHR *)malloc(sizeof(VkPresentModeKHR) * modeCount);
-	pfn_vkGetPhysicalDeviceSurfacePresentModesKHR(vk.physicalDevice, vk.surface, &modeCount, modes);
-	presentMode = VkRhi_ChoosePresentMode(modes, modeCount);
-	free(modes);
-
-	if (caps.currentExtent.width != UINT32_MAX)
-	{
-		vk.swapchainExtent = caps.currentExtent;
-	}
-	else
-	{
-		int w = 0, h = 0;
-		SDL_GetWindowSize(window, &w, &h);
-		vk.swapchainExtent.width  = (uint32_t)w;
-		vk.swapchainExtent.height = (uint32_t)h;
-	}
-
-	imgCount = caps.minImageCount + 1;
-	if (caps.maxImageCount > 0 && imgCount > caps.maxImageCount)
-	{
-		imgCount = caps.maxImageCount;
-	}
-
-	Com_Memset(&swInfo, 0, sizeof(swInfo));
-	swInfo.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swInfo.surface          = vk.surface;
-	swInfo.minImageCount    = imgCount;
-	swInfo.imageFormat      = surfaceFormat.format;
-	swInfo.imageColorSpace  = surfaceFormat.colorSpace;
-	swInfo.imageExtent      = vk.swapchainExtent;
-	swInfo.imageArrayLayers = 1;
-	swInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	swInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	swInfo.preTransform     = caps.currentTransform;
-	swInfo.compositeAlpha   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	swInfo.presentMode      = presentMode;
-	swInfo.clipped          = VK_TRUE;
-	swInfo.oldSwapchain     = VK_NULL_HANDLE;
-
-	res = pfn_vkCreateSwapchainKHR(vk.device, &swInfo, NULL, &vk.swapchain);
-	if (res != VK_SUCCESS)
-	{
-		Com_Printf(S_COLOR_RED "Vulkan: vkCreateSwapchainKHR failed (%d)\n", (int)res);
-		VkRHI_Shutdown();
 		return qfalse;
 	}
 
-	vk.swapchainImageFormat = surfaceFormat.format;
-
-	pfn_vkGetSwapchainImagesKHR(vk.device, vk.swapchain, &vk.swapchainImageCount, NULL);
-	vk.swapchainImages = (VkImage *)malloc(sizeof(VkImage) * vk.swapchainImageCount);
-	pfn_vkGetSwapchainImagesKHR(vk.device, vk.swapchain, &vk.swapchainImageCount, vk.swapchainImages);
-
-	vk.swapchainImageViews = (VkImageView *)calloc(vk.swapchainImageCount, sizeof(VkImageView));
-	for (i = 0; i < vk.swapchainImageCount; i++)
-	{
-		VkImageViewCreateInfo iv = { 0 };
-		iv.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		iv.image                           = vk.swapchainImages[i];
-		iv.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-		iv.format                          = vk.swapchainImageFormat;
-		iv.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-		iv.subresourceRange.baseMipLevel   = 0;
-		iv.subresourceRange.levelCount   = 1;
-		iv.subresourceRange.baseArrayLayer = 0;
-		iv.subresourceRange.layerCount     = 1;
-		res = pfn_vkCreateImageView(vk.device, &iv, NULL, &vk.swapchainImageViews[i]);
-		if (res != VK_SUCCESS)
-		{
-			Com_Printf(S_COLOR_RED "Vulkan: vkCreateImageView failed (%d)\n", (int)res);
-			VkRHI_Shutdown();
-			return qfalse;
-		}
-	}
-
-	Com_Memset(&colorAtt, 0, sizeof(colorAtt));
-	colorAtt.format         = vk.swapchainImageFormat;
-	colorAtt.samples        = VK_SAMPLE_COUNT_1_BIT;
-	colorAtt.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAtt.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAtt.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAtt.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAtt.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	colorRef.attachment = 0;
-	colorRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	Com_Memset(&subpass, 0, sizeof(subpass));
-	subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments    = &colorRef;
-
-	Com_Memset(&rpInfo, 0, sizeof(rpInfo));
-	rpInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	rpInfo.attachmentCount = 1;
-	rpInfo.pAttachments    = &colorAtt;
-	rpInfo.subpassCount    = 1;
-	rpInfo.pSubpasses      = &subpass;
-
-	res = pfn_vkCreateRenderPass(vk.device, &rpInfo, NULL, &vk.renderPass);
-	if (res != VK_SUCCESS)
-	{
-		Com_Printf(S_COLOR_RED "Vulkan: vkCreateRenderPass failed (%d)\n", (int)res);
-		VkRHI_Shutdown();
-		return qfalse;
-	}
-
-	vk.framebuffers = (VkFramebuffer *)calloc(vk.swapchainImageCount, sizeof(VkFramebuffer));
-	for (i = 0; i < vk.swapchainImageCount; i++)
-	{
-		VkFramebufferCreateInfo fb = { 0 };
-		fb.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		fb.renderPass      = vk.renderPass;
-		fb.attachmentCount = 1;
-		fb.pAttachments    = &vk.swapchainImageViews[i];
-		fb.width           = vk.swapchainExtent.width;
-		fb.height          = vk.swapchainExtent.height;
-		fb.layers          = 1;
-		res = pfn_vkCreateFramebuffer(vk.device, &fb, NULL, &vk.framebuffers[i]);
-		if (res != VK_SUCCESS)
-		{
-			Com_Printf(S_COLOR_RED "Vulkan: vkCreateFramebuffer failed (%d)\n", (int)res);
-			VkRHI_Shutdown();
-			return qfalse;
-		}
-	}
-
-	Com_Memset(&poolInfo, 0, sizeof(poolInfo));
-	poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolInfo.queueFamilyIndex = vk.queueFamilyIndex;
-	res = pfn_vkCreateCommandPool(vk.device, &poolInfo, NULL, &vk.commandPool);
-	if (res != VK_SUCCESS)
-	{
-		VkRHI_Shutdown();
-		return qfalse;
-	}
-
-	vk.commandBuffers = (VkCommandBuffer *)calloc(vk.swapchainImageCount, sizeof(VkCommandBuffer));
-	{
-		VkCommandBufferAllocateInfo alloc = { 0 };
-		alloc.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc.commandPool        = vk.commandPool;
-		alloc.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc.commandBufferCount = vk.swapchainImageCount;
-		res = pfn_vkAllocateCommandBuffers(vk.device, &alloc, vk.commandBuffers);
-		if (res != VK_SUCCESS)
-		{
-			VkRHI_Shutdown();
-			return qfalse;
-		}
-	}
-
-	for (i = 0; i < vk.swapchainImageCount; i++)
-	{
-		VkCommandBufferBeginInfo bi     = { 0 };
-		VkRenderPassBeginInfo rpBegin   = { 0 };
-		VkClearValue clearVal;
-
-		bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		bi.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		res = pfn_vkBeginCommandBuffer(vk.commandBuffers[i], &bi);
-		if (res != VK_SUCCESS)
-		{
-			VkRHI_Shutdown();
-			return qfalse;
-		}
-
-		clearVal.color.float32[0] = 0.02f;
-		clearVal.color.float32[1] = 0.05f;
-		clearVal.color.float32[2] = 0.12f;
-		clearVal.color.float32[3] = 1.f;
-
-		rpBegin.sType            = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		rpBegin.renderPass       = vk.renderPass;
-		rpBegin.framebuffer      = vk.framebuffers[i];
-		rpBegin.renderArea.offset = (VkOffset2D){ 0, 0 };
-		rpBegin.renderArea.extent = vk.swapchainExtent;
-		rpBegin.clearValueCount  = 1;
-		rpBegin.pClearValues     = &clearVal;
-
-		pfn_vkCmdBeginRenderPass(vk.commandBuffers[i], &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
-		pfn_vkCmdEndRenderPass(vk.commandBuffers[i]);
-		res = pfn_vkEndCommandBuffer(vk.commandBuffers[i]);
-		if (res != VK_SUCCESS)
-		{
-			VkRHI_Shutdown();
-			return qfalse;
-		}
-	}
-
-	Com_Memset(&semInfo, 0, sizeof(semInfo));
-	semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	res = pfn_vkCreateSemaphore(vk.device, &semInfo, NULL, &vk.imageAvailableSemaphore);
-	if (res != VK_SUCCESS)
-	{
-		VkRHI_Shutdown();
-		return qfalse;
-	}
-	res = pfn_vkCreateSemaphore(vk.device, &semInfo, NULL, &vk.renderFinishedSemaphore);
-	if (res != VK_SUCCESS)
-	{
-		VkRHI_Shutdown();
-		return qfalse;
-	}
-
-	Com_Memset(&fenceInfo, 0, sizeof(fenceInfo));
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	res = pfn_vkCreateFence(vk.device, &fenceInfo, NULL, &vk.inFlightFence);
-	if (res != VK_SUCCESS)
-	{
-		VkRHI_Shutdown();
-		return qfalse;
-	}
+	VkRhi_InitRayTracing();
 
 	vk.active = qtrue;
 	Com_Printf("Vulkan: RHI initialized (swapchain %ux%u, %u images)\n",
@@ -769,6 +665,8 @@ void VkRHI_Shutdown(void)
 	if (vk.device)
 	{
 		pfn_vkDeviceWaitIdle(vk.device);
+
+		VkRhi_ShutdownRayTracing();
 
 		if (vk.inFlightFence)
 		{
@@ -868,7 +766,8 @@ void VkRHI_Shutdown(void)
 void VkRHI_SwapFrame(void)
 {
 	uint32_t imageIndex = 0;
-	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkPipelineStageFlags waitStage = vk.rayTracingActive ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
+	                                                      : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submitInfo;
 	VkPresentInfoKHR presentInfo;
 	VkResult res;
